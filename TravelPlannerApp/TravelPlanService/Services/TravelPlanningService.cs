@@ -14,8 +14,6 @@ namespace TravelPlanService.Services
             _context = context;
         }
 
-        // ==================== TRAVEL PLANS ====================
-
         public async Task<TravelPlanDto?> GetTravelPlanAsync(int id)
         {
             var plan = await _context.TravelPlans
@@ -92,7 +90,17 @@ namespace TravelPlanService.Services
             return true;
         }
 
-        // ==================== DESTINATIONS ====================
+        // Kaskadno brisanje svih planova korisnika
+        public async Task<bool> DeleteUserPlansAsync(int userId)
+        {
+            var plans = await _context.TravelPlans
+                .Where(t => t.UserId == userId)
+                .ToListAsync();
+            if (!plans.Any()) return true;
+            _context.TravelPlans.RemoveRange(plans);
+            await _context.SaveChangesAsync();
+            return true;
+        }
 
         public async Task<DestinationDto?> GetDestinationAsync(int id)
         {
@@ -145,8 +153,6 @@ namespace TravelPlanService.Services
             await _context.SaveChangesAsync();
             return true;
         }
-
-        // ==================== ACTIVITIES ====================
 
         public async Task<ActivityDto?> GetActivityAsync(int id)
         {
@@ -214,8 +220,6 @@ namespace TravelPlanService.Services
             return true;
         }
 
-        // ==================== SHARING ====================
-
         public async Task<SharePlanDto> CreateShareTokenAsync(CreateShareDto dto)
         {
             var token = Guid.NewGuid().ToString("N") + Guid.NewGuid().ToString("N");
@@ -268,11 +272,8 @@ namespace TravelPlanService.Services
                 .FirstOrDefaultAsync(s => s.Token == token && s.ExpiresAt > DateTime.UtcNow);
 
             if (shareToken == null) return null;
-
             return await GetTravelPlanAsync(shareToken.TravelPlanId);
         }
-
-        // ==================== MAPPERS ====================
 
         private static TravelPlanDto MapToDto(TravelPlan plan) => new()
         {

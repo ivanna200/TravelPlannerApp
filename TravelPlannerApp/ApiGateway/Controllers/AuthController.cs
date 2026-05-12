@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.ServiceFabric.Services.Client;
 using Microsoft.ServiceFabric.Services.Remoting.Client;
 using TravelPlanner.Shared.DTOs;
 using TravelPlanner.Shared.Interfaces;
@@ -7,14 +8,18 @@ using TravelPlanner.Shared.Interfaces;
 namespace ApiGateway.Controllers
 {
     [ApiController]
-    [Route("api/auth")]
     public class AuthController : ControllerBase
     {
-        private IUserService GetUserServiceProxy() =>
+        private IUserService GetUserProxy() =>
             ServiceProxy.Create<IUserService>(
                 new Uri("fabric:/TravelPlannerApp/UserService"));
 
-        [HttpPost("register")]
+        private ITravelPlanService GetTravelProxy() =>
+            ServiceProxy.Create<ITravelPlanService>(
+                new Uri("fabric:/TravelPlannerApp/TravelPlanService"),
+                new ServicePartitionKey(0));
+
+        [HttpPost("api/auth/register")]
         public async Task<IActionResult> Register([FromBody] RegisterDto dto)
         {
             if (string.IsNullOrWhiteSpace(dto.Email) ||
@@ -23,56 +28,61 @@ namespace ApiGateway.Controllers
                 string.IsNullOrWhiteSpace(dto.LastName))
                 return BadRequest(new { message = "Sva polja su obavezna." });
 
-            var result = await GetUserServiceProxy().RegisterAsync(dto);
+            var result = await GetUserProxy().RegisterAsync(dto);
             if (!result.Success)
                 return BadRequest(new { message = result.Message });
             return Ok(result);
         }
 
-        [HttpPost("login")]
+        [HttpPost("api/auth/login")]
         public async Task<IActionResult> Login([FromBody] LoginDto dto)
         {
             if (string.IsNullOrWhiteSpace(dto.Email) ||
                 string.IsNullOrWhiteSpace(dto.Password))
                 return BadRequest(new { message = "Email i lozinka su obavezni." });
 
-            var result = await GetUserServiceProxy().LoginAsync(dto);
+            var result = await GetUserProxy().LoginAsync(dto);
             if (!result.Success)
                 return Unauthorized(new { message = result.Message });
             return Ok(result);
         }
 
-        [HttpGet("users/{id}")]
+        [HttpGet("api/users/{id}")]
         [Authorize]
         public async Task<IActionResult> GetUser(int id)
         {
-            var user = await GetUserServiceProxy().GetUserByIdAsync(id);
+            var user = await GetUserProxy().GetUserByIdAsync(id);
             if (user == null) return NotFound(new { message = "Korisnik nije pronađen." });
             return Ok(user);
         }
 
-        [HttpGet("users")]
+        [HttpGet("api/users")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetAllUsers()
         {
-            var users = await GetUserServiceProxy().GetAllUsersAsync();
+            var users = await GetUserProxy().GetAllUsersAsync();
             return Ok(users);
         }
 
-        [HttpDelete("users/{id}")]
+        // Kaskadno brisanje - briše korisnika i sve njegove planove
+        [HttpDelete("api/users/{id}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteUser(int id)
         {
-            var result = await GetUserServiceProxy().DeleteUserAsync(id);
+            // Prvo obriši sve planove korisnika (kaskadno briše destinacije, aktivnosti, troškove)
+            await GetTravelProxy().DeleteUserPlansAsync(id);
+
+            // Zatim obriši korisnika
+            var result = await GetUserProxy().DeleteUserAsync(id);
             if (!result) return NotFound(new { message = "Korisnik nije pronađen." });
-            return Ok(new { message = "Korisnik uspješno obrisan." });
+            return Ok(new { message = "Korisnik i svi povezani podaci su uspješno obrisani." });
         }
 
-        [HttpPatch("users/{id}/role")]
+        [HttpPatch("api/users/{id}/role")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> ChangeRole(int id, [FromBody] string role)
         {
-            var user = await GetUserServiceProxy().ChangeUserRoleAsync(id, role);
+            var user = await GetUserProxy().ChangeUserRoleAsync(id, role);
             if (user == null) return BadRequest(new { message = "Nevalidna uloga ili korisnik nije pronađen." });
             return Ok(user);
         }

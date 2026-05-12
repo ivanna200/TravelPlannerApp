@@ -4,6 +4,7 @@ using Microsoft.ServiceFabric.Services.Client;
 using Microsoft.ServiceFabric.Services.Remoting.Client;
 using TravelPlanner.Shared.DTOs;
 using TravelPlanner.Shared.Interfaces;
+using QRCoder;
 
 namespace ApiGateway.Controllers
 {
@@ -16,7 +17,8 @@ namespace ApiGateway.Controllers
                 new Uri("fabric:/TravelPlannerApp/TravelPlanService"),
                 new ServicePartitionKey(0));
 
-        [HttpPost("share")]
+        // Kreiranje share tokena
+        [HttpPost]
         [Authorize]
         public async Task<IActionResult> CreateShareToken([FromBody] CreateShareDto dto)
         {
@@ -27,7 +29,26 @@ namespace ApiGateway.Controllers
             return Ok(result);
         }
 
-        [HttpGet("validate/{token}")]
+        // QR kod generisanje
+        [HttpGet("{token}/qr-code")]
+        public async Task<IActionResult> GetQrCode(string token)
+        {
+            var validation = await GetProxy().ValidateShareTokenAsync(token);
+            if (!validation.IsValid)
+                return BadRequest(new { message = validation.Message });
+
+            var shareUrl = $"http://localhost:5173/shared/{token}";
+
+            using var qrGenerator = new QRCodeGenerator();
+            var qrCodeData = qrGenerator.CreateQrCode(shareUrl, QRCodeGenerator.ECCLevel.Q);
+            using var qrCode = new PngByteQRCode(qrCodeData);
+            var qrCodeBytes = qrCode.GetGraphic(20);
+
+            return File(qrCodeBytes, "image/png");
+        }
+
+        // Validacija tokena
+        [HttpGet("{token}/validate")]
         public async Task<IActionResult> ValidateToken(string token)
         {
             var result = await GetProxy().ValidateShareTokenAsync(token);
@@ -36,7 +57,8 @@ namespace ApiGateway.Controllers
             return Ok(result);
         }
 
-        [HttpGet("plan/{token}")]
+        // Pristup dijeljenom planu - VIEW
+        [HttpGet("{token}/plan")]
         public async Task<IActionResult> GetSharedPlan(string token)
         {
             var validation = await GetProxy().ValidateShareTokenAsync(token);
@@ -48,6 +70,24 @@ namespace ApiGateway.Controllers
                 return NotFound(new { message = "Plan nije pronađen." });
 
             return Ok(new { plan, accessType = validation.AccessType });
+        }
+
+        // Editovanje putem share tokena - samo EDIT tip
+        [HttpPut("{token}/plan")]
+        public async Task<IActionResult> UpdateSharedPlan(string token, [FromBody] UpdateTravelPlanDto dto)
+        {
+            var validation = await GetProxy().ValidateShareTokenAsync(token);
+            if (!validation.IsValid)
+                return BadRequest(new { message = validation.Message });
+
+            if (validation.AccessType != "EDIT")
+                return StatusCode(403, new { message = "Nemate dozvolu za editovanje ovog plana." });
+
+            var plan = await GetProxy().UpdateTravelPlanAsync(validation.TravelPlanId, dto);
+            if (plan == null)
+                return NotFound(new { message = "Plan nije pronađen." });
+
+            return Ok(plan);
         }
     }
 }

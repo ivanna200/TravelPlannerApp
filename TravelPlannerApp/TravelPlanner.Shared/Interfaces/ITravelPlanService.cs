@@ -11,6 +11,7 @@ namespace TravelPlanner.Shared.Interfaces
         Task<TravelPlanDto> CreateTravelPlanAsync(CreateTravelPlanDto dto);
         Task<TravelPlanDto?> UpdateTravelPlanAsync(int id, UpdateTravelPlanDto dto);
         Task<bool> DeleteTravelPlanAsync(int id);
+        Task<bool> DeleteUserPlansAsync(int userId);
 
         // Destinations
         Task<DestinationDto?> GetDestinationAsync(int id);
