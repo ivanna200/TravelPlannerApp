@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UserService", "UserService\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TravelPlanService", "TravelPlanService\TravelPlanService.csproj", "{2113A963-1567-417A-B142-A20857CB725C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExpenseService", "ExpenseService\ExpenseService.csproj", "{21CB39A6-660B-4E7B-A786-82E634B733E8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -65,6 +67,14 @@ Global
 		{2113A963-1567-417A-B142-A20857CB725C}.Release|Any CPU.Build.0 = Release|Any CPU
 		{2113A963-1567-417A-B142-A20857CB725C}.Release|x64.ActiveCfg = Release|Any CPU
 		{2113A963-1567-417A-B142-A20857CB725C}.Release|x64.Build.0 = Release|Any CPU
+		{21CB39A6-660B-4E7B-A786-82E634B733E8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{21CB39A6-660B-4E7B-A786-82E634B733E8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{21CB39A6-660B-4E7B-A786-82E634B733E8}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{21CB39A6-660B-4E7B-A786-82E634B733E8}.Debug|x64.Build.0 = Debug|Any CPU
+		{21CB39A6-660B-4E7B-A786-82E634B733E8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{21CB39A6-660B-4E7B-A786-82E634B733E8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{21CB39A6-660B-4E7B-A786-82E634B733E8}.Release|x64.ActiveCfg = Release|Any CPU
+		{21CB39A6-660B-4E7B-A786-82E634B733E8}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
