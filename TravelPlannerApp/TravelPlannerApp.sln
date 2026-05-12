@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TravelPlanner.Shared", "Tra
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UserService", "UserService\UserService.csproj", "{EE663E29-7206-4CB9-BBFF-03CED60F8288}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TravelPlanService", "TravelPlanService\TravelPlanService.csproj", "{2113A963-1567-417A-B142-A20857CB725C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -55,6 +57,14 @@ Global
 		{EE663E29-7206-4CB9-BBFF-03CED60F8288}.Release|Any CPU.Build.0 = Release|Any CPU
 		{EE663E29-7206-4CB9-BBFF-03CED60F8288}.Release|x64.ActiveCfg = Release|Any CPU
 		{EE663E29-7206-4CB9-BBFF-03CED60F8288}.Release|x64.Build.0 = Release|Any CPU
+		{2113A963-1567-417A-B142-A20857CB725C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2113A963-1567-417A-B142-A20857CB725C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2113A963-1567-417A-B142-A20857CB725C}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{2113A963-1567-417A-B142-A20857CB725C}.Debug|x64.Build.0 = Debug|Any CPU
+		{2113A963-1567-417A-B142-A20857CB725C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2113A963-1567-417A-B142-A20857CB725C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2113A963-1567-417A-B142-A20857CB725C}.Release|x64.ActiveCfg = Release|Any CPU
+		{2113A963-1567-417A-B142-A20857CB725C}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
