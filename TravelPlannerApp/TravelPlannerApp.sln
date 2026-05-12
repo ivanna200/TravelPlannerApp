@@ -15,6 +15,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TravelPlanService", "Travel
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExpenseService", "ExpenseService\ExpenseService.csproj", "{21CB39A6-660B-4E7B-A786-82E634B733E8}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChecklistService", "ChecklistService\ChecklistService.csproj", "{0B4F42DB-44C6-4EBA-97AC-966C02EFCA28}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -75,6 +77,14 @@ Global
 		{21CB39A6-660B-4E7B-A786-82E634B733E8}.Release|Any CPU.Build.0 = Release|Any CPU
 		{21CB39A6-660B-4E7B-A786-82E634B733E8}.Release|x64.ActiveCfg = Release|Any CPU
 		{21CB39A6-660B-4E7B-A786-82E634B733E8}.Release|x64.Build.0 = Release|Any CPU
+		{0B4F42DB-44C6-4EBA-97AC-966C02EFCA28}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0B4F42DB-44C6-4EBA-97AC-966C02EFCA28}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0B4F42DB-44C6-4EBA-97AC-966C02EFCA28}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{0B4F42DB-44C6-4EBA-97AC-966C02EFCA28}.Debug|x64.Build.0 = Debug|Any CPU
+		{0B4F42DB-44C6-4EBA-97AC-966C02EFCA28}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0B4F42DB-44C6-4EBA-97AC-966C02EFCA28}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0B4F42DB-44C6-4EBA-97AC-966C02EFCA28}.Release|x64.ActiveCfg = Release|Any CPU
+		{0B4F42DB-44C6-4EBA-97AC-966C02EFCA28}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

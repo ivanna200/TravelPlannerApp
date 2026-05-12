@@ -1,6 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <ApplicationManifest xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ApplicationTypeName="TravelPlannerAppType" ApplicationTypeVersion="1.0.0" xmlns="http://schemas.microsoft.com/2011/01/fabric">
   <Parameters>
+    <Parameter Name="ChecklistService_ASPNETCORE_ENVIRONMENT" DefaultValue="" />
     <Parameter Name="ExpenseService_ASPNETCORE_ENVIRONMENT" DefaultValue="" />
     <Parameter Name="TravelPlanService_ASPNETCORE_ENVIRONMENT" DefaultValue="" />
     <Parameter Name="UserService_ASPNETCORE_ENVIRONMENT" DefaultValue="" />
@@ -9,6 +10,13 @@
   <!-- Import the ServiceManifest from the ServicePackage. The ServiceManifestName and ServiceManifestVersion 
        should match the Name and Version attributes of the ServiceManifest element defined in the 
        ServiceManifest.xml file. -->
+  <ServiceManifestImport>
+    <ServiceManifestRef ServiceManifestName="ChecklistServicePkg" ServiceManifestVersion="1.0.0" />
+    <ConfigOverrides />
+    <EnvironmentOverrides CodePackageRef="code">
+      <EnvironmentVariable Name="ASPNETCORE_ENVIRONMENT" Value="[ChecklistService_ASPNETCORE_ENVIRONMENT]" />
+    </EnvironmentOverrides>
+  </ServiceManifestImport>
   <ServiceManifestImport>
     <ServiceManifestRef ServiceManifestName="ExpenseServicePkg" ServiceManifestVersion="1.0.0" />
     <ConfigOverrides />
