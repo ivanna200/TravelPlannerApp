@@ -22,7 +22,6 @@ namespace TravelPlanService.Services
                 .Include(t => t.Destinations)
                 .Include(t => t.Activities)
                 .FirstOrDefaultAsync(t => t.Id == id);
-
             return plan == null ? null : MapToDto(plan);
         }
 
@@ -33,7 +32,6 @@ namespace TravelPlanService.Services
                 .Include(t => t.Activities)
                 .Where(t => t.UserId == userId)
                 .ToListAsync();
-
             return plans.Select(MapToDto).ToList();
         }
 
@@ -69,7 +67,6 @@ namespace TravelPlanService.Services
                 .FirstOrDefaultAsync(t => t.Id == id);
 
             if (plan == null) return null;
-
             if (dto.EndDate < dto.StartDate)
                 throw new ArgumentException("Krajnji datum ne moze biti prije pocetnog datuma.");
             if (dto.Budget < 0)
@@ -90,7 +87,6 @@ namespace TravelPlanService.Services
         {
             var plan = await _context.TravelPlans.FindAsync(id);
             if (plan == null) return false;
-
             _context.TravelPlans.Remove(plan);
             await _context.SaveChangesAsync();
             return true;
@@ -123,7 +119,6 @@ namespace TravelPlanService.Services
                 Description = dto.Description,
                 TravelPlanId = dto.TravelPlanId
             };
-
             _context.Destinations.Add(destination);
             await _context.SaveChangesAsync();
             return MapDestinationToDto(destination);
@@ -133,13 +128,11 @@ namespace TravelPlanService.Services
         {
             var destination = await _context.Destinations.FindAsync(id);
             if (destination == null) return null;
-
             destination.Name = dto.Name;
             destination.Location = dto.Location;
             destination.ArrivalDate = dto.ArrivalDate;
             destination.DepartureDate = dto.DepartureDate;
             destination.Description = dto.Description;
-
             await _context.SaveChangesAsync();
             return MapDestinationToDto(destination);
         }
@@ -148,7 +141,6 @@ namespace TravelPlanService.Services
         {
             var destination = await _context.Destinations.FindAsync(id);
             if (destination == null) return false;
-
             _context.Destinations.Remove(destination);
             await _context.SaveChangesAsync();
             return true;
@@ -193,7 +185,6 @@ namespace TravelPlanService.Services
                 Status = dto.Status,
                 TravelPlanId = dto.TravelPlanId
             };
-
             _context.Activities.Add(activity);
             await _context.SaveChangesAsync();
             return MapActivityToDto(activity);
@@ -203,7 +194,6 @@ namespace TravelPlanService.Services
         {
             var activity = await _context.Activities.FindAsync(id);
             if (activity == null) return null;
-
             activity.Name = dto.Name;
             activity.Date = dto.Date;
             activity.Time = dto.Time;
@@ -211,7 +201,6 @@ namespace TravelPlanService.Services
             activity.Description = dto.Description;
             activity.EstimatedCost = dto.EstimatedCost;
             activity.Status = dto.Status;
-
             await _context.SaveChangesAsync();
             return MapActivityToDto(activity);
         }
@@ -220,10 +209,67 @@ namespace TravelPlanService.Services
         {
             var activity = await _context.Activities.FindAsync(id);
             if (activity == null) return false;
-
             _context.Activities.Remove(activity);
             await _context.SaveChangesAsync();
             return true;
+        }
+
+        // ==================== SHARING ====================
+
+        public async Task<SharePlanDto> CreateShareTokenAsync(CreateShareDto dto)
+        {
+            var token = Guid.NewGuid().ToString("N") + Guid.NewGuid().ToString("N");
+
+            var shareToken = new ShareToken
+            {
+                Token = token,
+                AccessType = dto.AccessType,
+                TravelPlanId = dto.TravelPlanId,
+                ExpiresAt = DateTime.UtcNow.AddDays(dto.ExpiryDays),
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.ShareTokens.Add(shareToken);
+            await _context.SaveChangesAsync();
+
+            return new SharePlanDto
+            {
+                Token = token,
+                AccessType = dto.AccessType,
+                TravelPlanId = dto.TravelPlanId,
+                ExpiresAt = shareToken.ExpiresAt,
+                ShareUrl = $"http://localhost:5173/shared/{token}"
+            };
+        }
+
+        public async Task<ShareTokenValidationDto> ValidateShareTokenAsync(string token)
+        {
+            var shareToken = await _context.ShareTokens
+                .FirstOrDefaultAsync(s => s.Token == token);
+
+            if (shareToken == null)
+                return new ShareTokenValidationDto { IsValid = false, Message = "Token nije pronađen." };
+
+            if (shareToken.ExpiresAt < DateTime.UtcNow)
+                return new ShareTokenValidationDto { IsValid = false, Message = "Token je istekao." };
+
+            return new ShareTokenValidationDto
+            {
+                IsValid = true,
+                AccessType = shareToken.AccessType,
+                TravelPlanId = shareToken.TravelPlanId,
+                Message = "Token je validan."
+            };
+        }
+
+        public async Task<TravelPlanDto?> GetPlanByShareTokenAsync(string token)
+        {
+            var shareToken = await _context.ShareTokens
+                .FirstOrDefaultAsync(s => s.Token == token && s.ExpiresAt > DateTime.UtcNow);
+
+            if (shareToken == null) return null;
+
+            return await GetTravelPlanAsync(shareToken.TravelPlanId);
         }
 
         // ==================== MAPPERS ====================

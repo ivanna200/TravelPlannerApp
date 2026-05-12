@@ -26,5 +26,10 @@ namespace TravelPlanner.Shared.Interfaces
         Task<ActivityDto> CreateActivityAsync(CreateActivityDto dto);
         Task<ActivityDto?> UpdateActivityAsync(int id, UpdateActivityDto dto);
         Task<bool> DeleteActivityAsync(int id);
+
+        // Sharing
+        Task<SharePlanDto> CreateShareTokenAsync(CreateShareDto dto);
+        Task<ShareTokenValidationDto> ValidateShareTokenAsync(string token);
+        Task<TravelPlanDto?> GetPlanByShareTokenAsync(string token);
     }
 }

@@ -22,36 +22,43 @@ namespace UserService
         public async Task<AuthResultDto> RegisterAsync(RegisterDto dto)
         {
             using var scope = _serviceProvider.CreateScope();
-            var authService = scope.ServiceProvider.GetRequiredService<AuthService>();
-            return await authService.RegisterAsync(dto);
+            var svc = scope.ServiceProvider.GetRequiredService<AuthService>();
+            return await svc.RegisterAsync(dto);
         }
 
         public async Task<AuthResultDto> LoginAsync(LoginDto dto)
         {
             using var scope = _serviceProvider.CreateScope();
-            var authService = scope.ServiceProvider.GetRequiredService<AuthService>();
-            return await authService.LoginAsync(dto);
+            var svc = scope.ServiceProvider.GetRequiredService<AuthService>();
+            return await svc.LoginAsync(dto);
         }
 
-        public async Task<UserDto> GetUserByIdAsync(int id)
+        public async Task<UserDto?> GetUserByIdAsync(int id)
         {
             using var scope = _serviceProvider.CreateScope();
-            var authService = scope.ServiceProvider.GetRequiredService<AuthService>();
-            return await authService.GetUserByIdAsync(id);
+            var svc = scope.ServiceProvider.GetRequiredService<AuthService>();
+            return await svc.GetUserByIdAsync(id);
         }
 
         public async Task<List<UserDto>> GetAllUsersAsync()
         {
             using var scope = _serviceProvider.CreateScope();
-            var authService = scope.ServiceProvider.GetRequiredService<AuthService>();
-            return await authService.GetAllUsersAsync();
+            var svc = scope.ServiceProvider.GetRequiredService<AuthService>();
+            return await svc.GetAllUsersAsync();
         }
 
         public async Task<bool> DeleteUserAsync(int id)
         {
             using var scope = _serviceProvider.CreateScope();
-            var authService = scope.ServiceProvider.GetRequiredService<AuthService>();
-            return await authService.DeleteUserAsync(id);
+            var svc = scope.ServiceProvider.GetRequiredService<AuthService>();
+            return await svc.DeleteUserAsync(id);
+        }
+
+        public async Task<UserDto?> ChangeUserRoleAsync(int id, string role)
+        {
+            using var scope = _serviceProvider.CreateScope();
+            var svc = scope.ServiceProvider.GetRequiredService<AuthService>();
+            return await svc.ChangeUserRoleAsync(id, role);
         }
 
         protected override IEnumerable<ServiceInstanceListener> CreateServiceInstanceListeners()

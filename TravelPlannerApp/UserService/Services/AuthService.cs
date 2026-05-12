@@ -122,6 +122,27 @@ namespace UserService.Services
             return true;
         }
 
+        public async Task<UserDto?> ChangeUserRoleAsync(int id, string role)
+        {
+            if (role != "User" && role != "Admin")
+                return null;
+
+            var user = await _context.Users.FindAsync(id);
+            if (user == null) return null;
+
+            user.Role = role;
+            await _context.SaveChangesAsync();
+
+            return new UserDto
+            {
+                Id = user.Id,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                Email = user.Email,
+                Role = user.Role
+            };
+        }
+
         private string GenerateJwtToken(User user)
         {
             var jwtSettings = _configuration.GetSection("JwtSettings");

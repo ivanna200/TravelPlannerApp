@@ -10,6 +10,7 @@ namespace TravelPlanService.Data
         public DbSet<TravelPlan> TravelPlans { get; set; }
         public DbSet<Destination> Destinations { get; set; }
         public DbSet<Activity> Activities { get; set; }
+        public DbSet<ShareToken> ShareTokens { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -43,6 +44,18 @@ namespace TravelPlanService.Data
                 entity.Property(a => a.Name).IsRequired().HasMaxLength(200);
                 entity.Property(a => a.EstimatedCost).HasPrecision(18, 2);
                 entity.Property(a => a.Status).HasDefaultValue("Planirano");
+            });
+
+            modelBuilder.Entity<ShareToken>(entity =>
+            {
+                entity.HasKey(s => s.Id);
+                entity.HasIndex(s => s.Token).IsUnique();
+                entity.Property(s => s.Token).IsRequired().HasMaxLength(500);
+                entity.Property(s => s.AccessType).IsRequired().HasMaxLength(10);
+                entity.HasOne(s => s.TravelPlan)
+                      .WithMany()
+                      .HasForeignKey(s => s.TravelPlanId)
+                      .OnDelete(DeleteBehavior.Cascade);
             });
         }
     }
