@@ -1,0 +1,57 @@
+# ========================
+# Default behaviour
+# ========================
+* text=auto eol=lf
+
+# ========================
+# Windows-specific files
+# ========================
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# ========================
+# C# / .NET
+# ========================
+*.cs text diff=csharp
+*.csproj text
+*.sln text eol=crlf
+*.props text
+*.targets text
+*.xml text
+*.config text
+*.json text
+*.yml text
+*.yaml text
+*.md text
+
+# ========================
+# Service Fabric
+# ========================
+*.sfproj text
+*.xml text
+
+# ========================
+# React / JS
+# ========================
+*.js text
+*.jsx text
+*.ts text
+*.tsx text
+*.css text
+*.html text
+*.svg text
+
+# ========================
+# Binary files
+# ========================
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.dll binary
+*.exe binary
+*.pdb binary
