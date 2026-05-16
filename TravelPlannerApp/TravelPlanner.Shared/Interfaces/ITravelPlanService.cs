@@ -30,6 +30,8 @@ namespace TravelPlanner.Shared.Interfaces
 
         // Sharing
         Task<SharePlanDto> CreateShareTokenAsync(CreateShareDto dto);
+        Task<List<SharePlanDto>> GetPlanSharingsAsync(int travelPlanId); // NOVO
+        Task<bool> DeleteShareTokenAsync(int id);                         // NOVO
         Task<ShareTokenValidationDto> ValidateShareTokenAsync(string token);
         Task<TravelPlanDto?> GetPlanByShareTokenAsync(string token);
     }

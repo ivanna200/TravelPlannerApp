@@ -17,7 +17,6 @@ namespace ApiGateway.Controllers
                 new Uri("fabric:/TravelPlannerApp/TravelPlanService"),
                 new ServicePartitionKey(0));
 
-        // Kreiranje share tokena
         [HttpPost]
         [Authorize]
         public async Task<IActionResult> CreateShareToken([FromBody] CreateShareDto dto)
@@ -29,7 +28,24 @@ namespace ApiGateway.Controllers
             return Ok(result);
         }
 
-        // QR kod generisanje
+        [HttpGet("plan/{travelPlanId:int}")]
+        [Authorize]
+        public async Task<IActionResult> GetPlanSharings(int travelPlanId)
+        {
+            var result = await GetProxy().GetPlanSharingsAsync(travelPlanId);
+            return Ok(result);
+        }
+
+        [HttpDelete("{id:int}")]
+        [Authorize]
+        public async Task<IActionResult> DeleteShareToken(int id)
+        {
+            var deleted = await GetProxy().DeleteShareTokenAsync(id);
+            if (!deleted)
+                return NotFound(new { message = "Share token nije pronađen." });
+            return NoContent();
+        }
+
         [HttpGet("{token}/qr-code")]
         public async Task<IActionResult> GetQrCode(string token)
         {
@@ -47,7 +63,6 @@ namespace ApiGateway.Controllers
             return File(qrCodeBytes, "image/png");
         }
 
-        // Validacija tokena
         [HttpGet("{token}/validate")]
         public async Task<IActionResult> ValidateToken(string token)
         {
@@ -57,7 +72,6 @@ namespace ApiGateway.Controllers
             return Ok(result);
         }
 
-        // Pristup dijeljenom planu - VIEW
         [HttpGet("{token}/plan")]
         public async Task<IActionResult> GetSharedPlan(string token)
         {
@@ -72,7 +86,6 @@ namespace ApiGateway.Controllers
             return Ok(new { plan, accessType = validation.AccessType });
         }
 
-        // Editovanje putem share tokena - samo EDIT tip
         [HttpPut("{token}/plan")]
         public async Task<IActionResult> UpdateSharedPlan(string token, [FromBody] UpdateTravelPlanDto dto)
         {

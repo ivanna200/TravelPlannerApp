@@ -1,50 +1,35 @@
-import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL;
-const getHeaders = () => ({ Authorization: `Bearer ${localStorage.getItem('token')}` });
+import api from './axiosConfig';
 
 const expenseService = {
   getPlanExpenses: async (travelPlanId) => {
-    const response = await axios.get(`${API_URL}/api/expenses/plan/${travelPlanId}`, {
-      headers: getHeaders(),
-    });
+    const response = await api.get(`/api/expenses/plan/${travelPlanId}`);
     return response.data;
   },
 
   getBudgetSummary: async (travelPlanId, plannedBudget) => {
-    const response = await axios.get(
-      `${API_URL}/api/expenses/plan/${travelPlanId}/budget-summary?plannedBudget=${plannedBudget}`,
-      { headers: getHeaders() }
+    const response = await api.get(
+      `/api/expenses/plan/${travelPlanId}/budget-summary?plannedBudget=${plannedBudget}`,
     );
     return response.data;
   },
 
   getByCategory: async (travelPlanId, category) => {
-    const response = await axios.get(
-      `${API_URL}/api/expenses/plan/${travelPlanId}/category/${category}`,
-      { headers: getHeaders() }
-    );
+    const response = await api.get(`/api/expenses/plan/${travelPlanId}/category/${category}`);
     return response.data;
   },
 
   createExpense: async (data) => {
-    const response = await axios.post(`${API_URL}/api/expenses`, data, {
-      headers: getHeaders(),
-    });
+    const response = await api.post('/api/expenses', data);
     return response.data;
   },
 
   updateExpense: async (id, data) => {
-    const response = await axios.put(`${API_URL}/api/expenses/${id}`, data, {
-      headers: getHeaders(),
-    });
+    const response = await api.put(`/api/expenses/${id}`, data);
     return response.data;
   },
 
   deleteExpense: async (id) => {
-    const response = await axios.delete(`${API_URL}/api/expenses/${id}`, {
-      headers: getHeaders(),
-    });
+    const response = await api.delete(`/api/expenses/${id}`);
     return response.data;
   },
 };

@@ -22,7 +22,9 @@ builder.Services.AddCors(options =>
 
 // JWT autentifikacija
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-var secret = jwtSettings["Secret"];
+
+var secret = jwtSettings["Secret"]
+    ?? throw new InvalidOperationException("JwtSettings:Secret nije konfigurisan u appsettings.json.");
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>

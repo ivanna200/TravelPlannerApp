@@ -1,42 +1,55 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { AuthContext } from '../hooks/useAuth';
 import authService from '../services/authService';
 
-const AuthContext = createContext(null);
+const decodeToken = (token) => {
+  try {
+    const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    return JSON.parse(decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')));
+  } catch { return null; }
+};
+
+const isTokenExpired = (token) => {
+  const decoded = decodeToken(token);
+  if (!decoded?.exp) return true;
+  return decoded.exp * 1000 < Date.now();
+};
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
+  const [user,    setUser]    = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const token     = localStorage.getItem('token');
     const savedUser = authService.getCurrentUser();
-    if (savedUser) setUser(savedUser);
+    if (token && savedUser) {
+      isTokenExpired(token) ? authService.logout() : setUser(savedUser);
+    }
     setLoading(false);
   }, []);
 
-  const login = async (data) => {
-    const result = await authService.login(data);
-    if (result.success) {
-      setUser(result.user);
+  const login = useCallback(async (data) => {
+    try {
+      const result = await authService.login(data);
+      if (result.success) setUser(result.user);
+      return result;
+    } catch (err) {
+      return { success: false, message: err.response?.data?.message || 'Greška pri prijavi.' };
     }
-    return result;
-  };
+  }, []);
 
-  const register = async (data) => {
-    const result = await authService.register(data);
-    if (result.success) {
-      localStorage.setItem('token', result.user.token);
-      localStorage.setItem('user', JSON.stringify(result.user));
-      setUser(result.user);
+  const register = useCallback(async (data) => {
+    try {
+      const result = await authService.register(data);
+      if (result.success) setUser(result.user);
+      return result;
+    } catch (err) {
+      return { success: false, message: err.response?.data?.message || 'Greška pri registraciji.' };
     }
-    return result;
-  };
+  }, []);
 
-  const logout = () => {
-    authService.logout();
-    setUser(null);
-  };
-
-  const isAdmin = () => user?.role === 'Admin';
+  const logout  = useCallback(() => { authService.logout(); setUser(null); }, []);
+  const isAdmin = useCallback(() => user?.role === 'Admin', [user]);
 
   return (
     <AuthContext.Provider value={{ user, login, register, logout, isAdmin, loading }}>
@@ -44,5 +57,3 @@ export const AuthProvider = ({ children }) => {
     </AuthContext.Provider>
   );
 };
-
-export const useAuth = () => useContext(AuthContext);

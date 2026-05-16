@@ -1,27 +1,34 @@
-import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL;
-const getHeaders = () => ({ Authorization: `Bearer ${localStorage.getItem('token')}` });
+import api from './axiosConfig';
 
 const sharingService = {
   createShareToken: async (data) => {
-    const response = await axios.post(`${API_URL}/api/sharing`, data, {
-      headers: getHeaders(),
-    });
+    const response = await api.post('/api/sharing', data);
     return response.data;
   },
 
+  getPlanSharings: async (travelPlanId) => {
+    const response = await api.get(`/api/sharing/plan/${travelPlanId}`);
+    return response.data;
+  },
+
+  deleteShareToken: async (id) => {
+    const response = await api.delete(`/api/sharing/${id}`);
+    return response.data;
+  },
+
+  // Javni endpoint — interceptor dodaje token samo ako postoji
   getSharedPlan: async (token) => {
-    const response = await axios.get(`${API_URL}/api/sharing/${token}/plan`);
+    const response = await api.get(`/api/sharing/${token}/plan`);
     return response.data;
   },
 
   validateToken: async (token) => {
-    const response = await axios.get(`${API_URL}/api/sharing/${token}/validate`);
+    const response = await api.get(`/api/sharing/${token}/validate`);
     return response.data;
   },
 
-  getQrCodeUrl: (token) => `${API_URL}/api/sharing/${token}/qr-code`,
+  getQrCodeUrl: (token) =>
+    `${import.meta.env.VITE_API_URL}/api/sharing/${token}/qr-code`,
 };
 
 export default sharingService;

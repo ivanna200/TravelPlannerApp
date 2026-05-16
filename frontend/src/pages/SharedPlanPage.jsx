@@ -1,105 +1,145 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import sharingService from '../services/sharingService';
+import LoadingSpinner from '../components/LoadingSpinner';
+import { formatDate } from '../utils/formatDate';
+import { Eye, Pencil, MapPin, Calendar, Wallet, Activity, Clock, XCircle } from 'lucide-react';
+
+const STATUS_BADGE = {
+  'Planirano':   'badge-sky',
+  'Rezervisano': 'badge-violet',
+  'Završeno':    'badge-success',
+  'Otkazano':    'badge-danger',
+};
 
 const SharedPlanPage = () => {
-  const { token } = useParams();
-  const [data, setData] = useState(null);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(true);
+  const { token }               = useParams();
+  const [data,    setData]      = useState(null);
+  const [error,   setError]     = useState('');
+  const [loading, setLoading]   = useState(true);
 
   useEffect(() => {
-    const loadPlan = async () => {
-      try {
-        const result = await sharingService.getSharedPlan(token);
-        setData(result);
-      } catch { setError('Plan nije pronađen ili je link istekao.'); }
-      finally { setLoading(false); }
-    };
-    loadPlan();
+    sharingService.getSharedPlan(token)
+      .then(setData)
+      .catch(() => setError('Plan nije pronađen ili je link istekao.'))
+      .finally(() => setLoading(false));
   }, [token]);
 
-  const formatDate = (d) => d ? new Date(d).toLocaleDateString('bs-BA', { day: '2-digit', month: 'short', year: 'numeric' }) : '';
+  if (loading) return <LoadingSpinner text="Učitavanje dijeljenog plana..." />;
 
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="text-center"><div className="text-5xl mb-4">✈️</div><p className="text-slate-500">Učitavanje plana...</p></div>
-    </div>
-  );
-
-  if (error) return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="text-center card max-w-md w-full">
-        <div className="text-5xl mb-4">❌</div>
-        <h2 className="text-xl font-semibold text-slate-800 mb-2">Link nije validan</h2>
-        <p className="text-slate-500">{error}</p>
-        <Link to="/login" className="btn-primary inline-flex mt-4">Prijavi se</Link>
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+        <div className="card max-w-md w-full text-center py-12">
+          <div className="w-16 h-16 bg-rose-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <XCircle className="w-8 h-8 text-rose-400" />
+          </div>
+          <h2 className="text-xl font-bold text-slate-800 mb-2">Link nije validan</h2>
+          <p className="text-slate-500 text-sm mb-6">{error}</p>
+          <Link to="/login" className="btn-primary">Prijavi se</Link>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
 
   const { plan, accessType } = data;
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8">
-      <div className={`flex items-center gap-2 px-4 py-3 rounded-lg mb-6 text-sm font-medium ${accessType === 'EDIT' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-blue-50 text-blue-700 border border-blue-200'}`}>
-        {accessType === 'EDIT' ? '✏️ Dijeljeni plan — Pristup za uređivanje' : '👁️ Dijeljeni plan — Samo pregled'}
+    <div className="min-h-screen bg-slate-50">
+      {/* Access type banner */}
+      <div className={`py-3 px-4 text-center text-sm font-semibold ${accessType === 'EDIT' ? 'bg-emerald-500 text-white' : 'bg-primary-500 text-white'}`}>
+        {accessType === 'EDIT'
+          ? <><Pencil className="inline w-4 h-4 mr-2" />Dijeljeni plan — Pristup za uređivanje</>
+          : <><Eye className="inline w-4 h-4 mr-2" />Dijeljeni plan — Samo pregled</>}
       </div>
 
-      <div className="card mb-6">
-        <h1 className="text-2xl font-bold text-slate-800 mb-2">{plan.name}</h1>
-        {plan.description && <p className="text-slate-500 mb-4">{plan.description}</p>}
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div className="bg-slate-50 rounded-lg p-3">
-            <div className="text-slate-500 mb-1">📅 Period putovanja</div>
-            <div className="font-medium">{formatDate(plan.startDate)} — {formatDate(plan.endDate)}</div>
-          </div>
-          <div className="bg-slate-50 rounded-lg p-3">
-            <div className="text-slate-500 mb-1">💰 Planirani budžet</div>
-            <div className="font-medium text-emerald-600">{plan.budget?.toLocaleString()} €</div>
-          </div>
-        </div>
-        {plan.notes && <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-800">📝 {plan.notes}</div>}
-      </div>
+      <div className="max-w-3xl mx-auto px-4 py-8 space-y-5">
 
-      {plan.destinations?.length > 0 && (
-        <div className="card mb-6">
-          <h2 className="font-semibold text-slate-800 mb-4">🗺️ Destinacije ({plan.destinations.length})</h2>
-          <div className="space-y-3">
-            {plan.destinations.map((d) => (
-              <div key={d.id} className="flex items-start gap-3 p-3 bg-slate-50 rounded-lg">
-                <span className="text-xl">📍</span>
-                <div>
-                  <div className="font-medium text-slate-800">{d.name}</div>
-                  <div className="text-sm text-slate-500">{d.location} · {formatDate(d.arrivalDate)} — {formatDate(d.departureDate)}</div>
-                  {d.description && <div className="text-sm text-slate-600 mt-1">{d.description}</div>}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {plan.activities?.length > 0 && (
+        {/* Osnovni podaci */}
         <div className="card">
-          <h2 className="font-semibold text-slate-800 mb-4">📋 Aktivnosti ({plan.activities.length})</h2>
-          <div className="space-y-3">
-            {plan.activities.map((a) => (
-              <div key={a.id} className="flex items-start gap-3 p-3 bg-slate-50 rounded-lg">
-                <span className="text-xl">🎯</span>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <div className="font-medium text-slate-800">{a.name}</div>
-                    <span className={`badge text-xs ${a.status === 'Završeno' ? 'bg-emerald-100 text-emerald-700' : a.status === 'Otkazano' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>{a.status}</span>
-                  </div>
-                  <div className="text-sm text-slate-500">{a.location} · {formatDate(a.date)} u {a.time}</div>
-                  {a.estimatedCost > 0 && <div className="text-sm text-emerald-600 mt-1">💰 {a.estimatedCost} €</div>}
+          <h1 className="text-2xl font-bold text-slate-900 mb-2">{plan.name}</h1>
+          {plan.description && <p className="text-slate-500 mb-4 text-sm">{plan.description}</p>}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-slate-50 rounded-xl p-3 flex items-center gap-3">
+              <Calendar className="w-5 h-5 text-sky-500 shrink-0" />
+              <div>
+                <div className="text-xs text-slate-500">Period</div>
+                <div className="text-sm font-semibold text-slate-800">
+                  {formatDate(plan.startDate)} — {formatDate(plan.endDate)}
                 </div>
               </div>
-            ))}
+            </div>
+            <div className="bg-emerald-50 rounded-xl p-3 flex items-center gap-3">
+              <Wallet className="w-5 h-5 text-emerald-600 shrink-0" />
+              <div>
+                <div className="text-xs text-slate-500">Budžet</div>
+                <div className="text-sm font-bold text-emerald-700">{plan.budget?.toLocaleString()} €</div>
+              </div>
+            </div>
           </div>
+          {plan.notes && (
+            <div className="mt-4 bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm text-amber-800">
+              📝 {plan.notes}
+            </div>
+          )}
         </div>
-      )}
+
+        {/* Destinacije */}
+        {plan.destinations?.length > 0 && (
+          <div className="card">
+            <h2 className="section-title mb-4">
+              <MapPin className="w-5 h-5 text-sky-500" />
+              Destinacije ({plan.destinations.length})
+            </h2>
+            <div className="space-y-3">
+              {plan.destinations.map(d => (
+                <div key={d.id} className="flex gap-3 p-3 bg-slate-50 rounded-xl">
+                  <div className="w-8 h-8 bg-sky-100 rounded-lg flex items-center justify-center shrink-0">
+                    <MapPin className="w-4 h-4 text-sky-600" />
+                  </div>
+                  <div>
+                    <div className="font-semibold text-slate-800 text-sm">{d.name}</div>
+                    <div className="text-xs text-slate-500">
+                      {d.location} · {formatDate(d.arrivalDate)} — {formatDate(d.departureDate)}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Aktivnosti */}
+        {plan.activities?.length > 0 && (
+          <div className="card">
+            <h2 className="section-title mb-4">
+              <Activity className="w-5 h-5 text-primary-500" />
+              Aktivnosti ({plan.activities.length})
+            </h2>
+            <div className="space-y-2">
+              {plan.activities.map(a => (
+                <div key={a.id} className="flex gap-3 p-3 bg-slate-50 rounded-xl">
+                  <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center shrink-0">
+                    <Clock className="w-4 h-4 text-blue-500" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-semibold text-slate-800 text-sm">{a.name}</span>
+                      <span className={`badge text-xs ${STATUS_BADGE[a.status] || 'badge-primary'}`}>
+                        {a.status}
+                      </span>
+                    </div>
+                    <div className="text-xs text-slate-500">
+                      {a.location && `${a.location} · `}{formatDate(a.date)}{a.time && ` u ${a.time}`}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+      </div>
     </div>
   );
 };

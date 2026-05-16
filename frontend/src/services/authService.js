@@ -1,15 +1,13 @@
-import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL;
+import api from './axiosConfig';
 
 const authService = {
   register: async (data) => {
-    const response = await axios.post(`${API_URL}/api/auth/register`, data);
+    const response = await api.post('/api/auth/register', data);
     return response.data;
   },
 
   login: async (data) => {
-    const response = await axios.post(`${API_URL}/api/auth/login`, data);
+    const response = await api.post('/api/auth/login', data);
     if (response.data.user?.token) {
       localStorage.setItem('token', response.data.user.token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
@@ -30,26 +28,17 @@ const authService = {
   getToken: () => localStorage.getItem('token'),
 
   getAllUsers: async () => {
-    const response = await axios.get(`${API_URL}/api/users`, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-    });
+    const response = await api.get('/api/users');
     return response.data;
   },
 
   deleteUser: async (id) => {
-    const response = await axios.delete(`${API_URL}/api/users/${id}`, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-    });
+    const response = await api.delete(`/api/users/${id}`);
     return response.data;
   },
 
-  changeRole: async (id, role) => {
-    const response = await axios.patch(`${API_URL}/api/users/${id}/role`, role, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`,
-        'Content-Type': 'application/json',
-      },
-    });
+  changeRole: async (id, newRole) => {
+    const response = await api.patch(`/api/users/${id}/role`, { role: newRole });
     return response.data;
   },
 };

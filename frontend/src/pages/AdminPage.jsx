@@ -1,107 +1,165 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import authService from '../services/authService';
+import { useAuth } from '../hooks/useAuth';
+import { useToast } from '../hooks/useToast';
+import authService  from '../services/authService';
 import LoadingSpinner from '../components/LoadingSpinner';
+import ConfirmModal   from '../components/ConfirmModal';
+import { ArrowLeft, Settings, Users, ShieldCheck, ShieldOff, Trash2 } from 'lucide-react';
 
 const AdminPage = () => {
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [message, setMessage] = useState('');
+  const { user: currentUser } = useAuth();
+  const { showToast }         = useToast();
+  const [users,        setUsers]        = useState([]);
+  const [loading,      setLoading]      = useState(true);
+  const [confirmModal, setConfirmModal] = useState(null);
 
-  useEffect(() => { loadUsers(); }, []);
-
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     try {
       const data = await authService.getAllUsers();
       setUsers(data);
-    } catch { setError('Greška pri učitavanju korisnika.'); }
-    finally { setLoading(false); }
+    } catch {
+      showToast('Greška pri učitavanju korisnika.', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, [showToast]);
+
+  useEffect(() => {
+    loadUsers();
+  }, [loadUsers]);
+
+  const handleDeleteClick = (u) => {
+    if (u.id === currentUser.id) {
+      showToast('Ne možete obrisati vlastiti nalog.', 'error');
+      return;
+    }
+    setConfirmModal({ id: u.id, name: `${u.firstName} ${u.lastName}` });
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Obrisati korisnika i sve njegove podatke? Ova akcija se ne može poništiti.')) return;
+  const handleDeleteConfirmed = async (id) => {
     try {
       await authService.deleteUser(id);
-      setUsers(users.filter((u) => u.id !== id));
-      setMessage('Korisnik uspješno obrisan.');
-      setTimeout(() => setMessage(''), 3000);
-    } catch { setError('Greška pri brisanju.'); }
+      setUsers(prev => prev.filter(u => u.id !== id));
+      showToast('Korisnik uspješno obrisan.');
+    } catch {
+      showToast('Greška pri brisanju korisnika.', 'error');
+    }
   };
 
-  const handleRoleChange = async (id, currentRole) => {
+  const handleRole = async (id, currentRole) => {
     const newRole = currentRole === 'Admin' ? 'User' : 'Admin';
-    if (!window.confirm(`Promijeniti ulogu korisnika u ${newRole}?`)) return;
     try {
-      const updated = await authService.changeRole(id, JSON.stringify(newRole));
-      setUsers(users.map((u) => (u.id === id ? { ...u, role: updated.role } : u)));
-      setMessage(`Uloga promijenjena u ${newRole}.`);
-      setTimeout(() => setMessage(''), 3000);
-    } catch { setError('Greška pri promjeni uloge.'); }
+      const updated = await authService.changeRole(id, newRole);
+      setUsers(prev => prev.map(u => u.id === id ? { ...u, role: updated.role } : u));
+      showToast(`Uloga uspješno promijenjena u ${newRole}.`);
+    } catch {
+      showToast('Greška pri promjeni uloge.', 'error');
+    }
   };
 
   if (loading) return <LoadingSpinner />;
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8">
+    <div className="page-container">
+
+      {confirmModal && (
+        <ConfirmModal
+          title="Obrisati korisnika?"
+          message={`Obrisati korisnika "${confirmModal.name}"? Brisat će se i svi njegovi planovi putovanja i svi povezani podaci. Ova akcija se ne može poništiti.`}
+          onConfirm={() => handleDeleteConfirmed(confirmModal.id)}
+          onClose={() => setConfirmModal(null)}
+        />
+      )}
+
+      <Link to="/dashboard" className="inline-flex items-center gap-1.5 text-slate-500 hover:text-sky-600 text-sm mb-6 transition-colors group">
+        <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />Dashboard
+      </Link>
+
       <div className="flex items-center gap-3 mb-6">
-        <Link to="/dashboard" className="text-slate-500 hover:text-slate-700 transition-colors text-sm">← Dashboard</Link>
-        <h1 className="text-2xl font-bold text-slate-800">⚙️ Admin panel</h1>
+        <div className="w-11 h-11 bg-primary-50 rounded-2xl flex items-center justify-center">
+          <Settings className="w-5 h-5 text-primary-500" />
+        </div>
+        <div>
+          <h1 className="text-slate-900 text-xl">Admin panel</h1>
+          <p className="text-slate-500 text-sm">Upravljajte korisnicima sistema</p>
+        </div>
       </div>
 
-      {error && <div className="error-box mb-4">{error}</div>}
-      {message && <div className="success-box mb-4">{message}</div>}
-
       <div className="card">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-semibold text-slate-800">Korisnici sistema</h2>
-          <span className="badge bg-slate-100 text-slate-600">{users.length} korisnika</span>
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-2">
+            <Users className="w-5 h-5 text-slate-400" />
+            <h2 className="text-slate-800">Korisnici</h2>
+          </div>
+          <span className="badge-neutral">{users.length} ukupno</span>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-slate-200">
-                <th className="text-left py-3 px-4 text-sm font-semibold text-slate-600">ID</th>
-                <th className="text-left py-3 px-4 text-sm font-semibold text-slate-600">Korisnik</th>
-                <th className="text-left py-3 px-4 text-sm font-semibold text-slate-600">Email</th>
-                <th className="text-left py-3 px-4 text-sm font-semibold text-slate-600">Uloga</th>
-                <th className="text-right py-3 px-4 text-sm font-semibold text-slate-600">Akcije</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {users.map((u) => (
-                <tr key={u.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="py-3 px-4 text-sm text-slate-500">#{u.id}</td>
-                  <td className="py-3 px-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-700 font-semibold text-sm">
-                        {u.firstName?.charAt(0)}
-                      </div>
-                      <span className="font-medium text-slate-800">{u.firstName} {u.lastName}</span>
-                    </div>
-                  </td>
-                  <td className="py-3 px-4 text-sm text-slate-600">{u.email}</td>
-                  <td className="py-3 px-4">
-                    <span className={`badge ${u.role === 'Admin' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
-                      {u.role}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 text-right">
-                    <div className="flex justify-end gap-2">
-                      <button onClick={() => handleRoleChange(u.id, u.role)} className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-colors ${u.role === 'Admin' ? 'bg-slate-100 hover:bg-slate-200 text-slate-700' : 'bg-amber-100 hover:bg-amber-200 text-amber-700'}`}>
-                        {u.role === 'Admin' ? '→ User' : '→ Admin'}
-                      </button>
-                      <button onClick={() => handleDelete(u.id)} className="text-xs px-3 py-1.5 rounded-lg font-medium bg-red-100 hover:bg-red-200 text-red-700 transition-colors">
-                        Obriši
-                      </button>
-                    </div>
-                  </td>
+        {users.length === 0 ? (
+          <div className="empty-state py-10">
+            <Users className="w-12 h-12 text-slate-200 mb-3" />
+            <p className="text-slate-400 text-sm font-medium">Nema registrovanih korisnika.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-slate-100">
+                  {['ID', 'Korisnik', 'Email', 'Uloga', 'Akcije'].map((h, i) => (
+                    <th
+                      key={h}
+                      className={`py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider ${i === 4 ? 'text-right' : 'text-left'}`}
+                    >
+                      {h}
+                    </th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {users.map(u => (
+                  <tr key={u.id} className="hover:bg-slate-50/60 transition-colors">
+                    <td className="py-3.5 px-4 text-xs text-slate-400 font-mono">#{u.id}</td>
+                    <td className="py-3.5 px-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 bg-gradient-to-br from-sky-400 to-primary-600 rounded-xl flex items-center justify-center text-white text-xs font-bold shrink-0">
+                          {u.firstName?.[0]}{u.lastName?.[0]}
+                        </div>
+                        <span className="text-sm font-semibold text-slate-800">
+                          {u.firstName} {u.lastName}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="py-3.5 px-4 text-sm text-slate-500">{u.email}</td>
+                    <td className="py-3.5 px-4">
+                      <span className={u.role === 'Admin' ? 'badge-warning' : 'badge-sky'}>{u.role}</span>
+                    </td>
+                    <td className="py-3.5 px-4">
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => handleRole(u.id, u.role)}
+                          className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-semibold transition-colors border
+                            ${u.role === 'Admin'
+                              ? 'bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200'
+                              : 'bg-sky-50 hover:bg-sky-100 text-sky-700 border-sky-200'}`}
+                        >
+                          {u.role === 'Admin'
+                            ? <><ShieldOff className="w-3.5 h-3.5" />→ User</>
+                            : <><ShieldCheck className="w-3.5 h-3.5" />→ Admin</>}
+                        </button>
+                        <button
+                          onClick={() => handleDeleteClick(u)}
+                          className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-semibold bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />Obriši
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

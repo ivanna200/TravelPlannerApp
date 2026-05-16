@@ -90,7 +90,6 @@ namespace TravelPlanService.Services
             return true;
         }
 
-        // Kaskadno brisanje svih planova korisnika
         public async Task<bool> DeleteUserPlansAsync(int userId)
         {
             var plans = await _context.TravelPlans
@@ -238,12 +237,40 @@ namespace TravelPlanService.Services
 
             return new SharePlanDto
             {
+                Id = shareToken.Id,
                 Token = token,
                 AccessType = dto.AccessType,
                 TravelPlanId = dto.TravelPlanId,
                 ExpiresAt = shareToken.ExpiresAt,
                 ShareUrl = $"http://localhost:5173/shared/{token}"
             };
+        }
+
+        public async Task<List<SharePlanDto>> GetPlanSharingsAsync(int travelPlanId)
+        {
+            var tokens = await _context.ShareTokens
+                .Where(s => s.TravelPlanId == travelPlanId && s.ExpiresAt > DateTime.UtcNow)
+                .OrderByDescending(s => s.CreatedAt)
+                .ToListAsync();
+
+            return tokens.Select(s => new SharePlanDto
+            {
+                Id = s.Id,
+                Token = s.Token,
+                AccessType = s.AccessType,
+                TravelPlanId = s.TravelPlanId,
+                ExpiresAt = s.ExpiresAt,
+                ShareUrl = $"http://localhost:5173/shared/{s.Token}"
+            }).ToList();
+        }
+
+        public async Task<bool> DeleteShareTokenAsync(int id)
+        {
+            var shareToken = await _context.ShareTokens.FindAsync(id);
+            if (shareToken == null) return false;
+            _context.ShareTokens.Remove(shareToken);
+            await _context.SaveChangesAsync();
+            return true;
         }
 
         public async Task<ShareTokenValidationDto> ValidateShareTokenAsync(string token)

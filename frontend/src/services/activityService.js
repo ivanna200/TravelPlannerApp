@@ -1,42 +1,28 @@
-import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL;
-const getHeaders = () => ({ Authorization: `Bearer ${localStorage.getItem('token')}` });
+import api from './axiosConfig';
 
 const activityService = {
   getPlanActivities: async (travelPlanId) => {
-    const response = await axios.get(`${API_URL}/api/activities/plan/${travelPlanId}`, {
-      headers: getHeaders(),
-    });
+    const response = await api.get(`/api/activities/plan/${travelPlanId}`);
     return response.data;
   },
 
   getActivitiesByDate: async (travelPlanId, date) => {
-    const response = await axios.get(
-      `${API_URL}/api/activities/plan/${travelPlanId}/date/${date}`,
-      { headers: getHeaders() }
-    );
+    const response = await api.get(`/api/activities/plan/${travelPlanId}/date/${date}`);
     return response.data;
   },
 
   createActivity: async (data) => {
-    const response = await axios.post(`${API_URL}/api/activities`, data, {
-      headers: getHeaders(),
-    });
+    const response = await api.post('/api/activities', data);
     return response.data;
   },
 
   updateActivity: async (id, data) => {
-    const response = await axios.put(`${API_URL}/api/activities/${id}`, data, {
-      headers: getHeaders(),
-    });
+    const response = await api.put(`/api/activities/${id}`, data);
     return response.data;
   },
 
   deleteActivity: async (id) => {
-    const response = await axios.delete(`${API_URL}/api/activities/${id}`, {
-      headers: getHeaders(),
-    });
+    const response = await api.delete(`/api/activities/${id}`);
     return response.data;
   },
 };

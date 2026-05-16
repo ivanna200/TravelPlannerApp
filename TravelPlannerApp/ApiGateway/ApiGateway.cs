@@ -32,7 +32,6 @@ namespace ApiGateway
                         builder.Services.AddEndpointsApiExplorer();
                         builder.Services.AddSwaggerGen();
 
-                        // CORS - dozvoli oba porta
                         builder.Services.AddCors(options =>
                         {
                             options.AddPolicy("AllowFrontend", policy =>
@@ -48,7 +47,10 @@ namespace ApiGateway
                         });
 
                         var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-                        var secret = jwtSettings["Secret"] ?? throw new InvalidOperationException("JWT Secret nije konfigurisan.");
+
+                        var secret = jwtSettings["Secret"]
+                            ?? throw new InvalidOperationException(
+                                "JWT Secret nije konfigurisan u appsettings.json pod JwtSettings:Secret.");
 
                         builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                             .AddJwtBearer(options =>
@@ -61,7 +63,8 @@ namespace ApiGateway
                                     ValidateIssuerSigningKey = true,
                                     ValidIssuer = jwtSettings["Issuer"],
                                     ValidAudience = jwtSettings["Audience"],
-                                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret))
+                                    IssuerSigningKey = new SymmetricSecurityKey(
+                                        Encoding.UTF8.GetBytes(secret))
                                 };
                             });
 

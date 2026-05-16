@@ -1,129 +1,191 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import travelPlanService from '../services/travelPlanService';
-import LoadingSpinner from '../components/LoadingSpinner';
+import { useAuth } from '../hooks/useAuth';
+import { useTravelPlan }  from '../hooks/useTravelPlan';
+import { useToast }       from '../hooks/useToast';
+import SkeletonGrid       from '../components/SkeletonGrid';
+import ConfirmModal       from '../components/ConfirmModal';
+import { formatDateRange, getPlanStatus, getDaysBetween } from '../utils/formatDate';
+import {
+  Plus, MapPin, Calendar, Wallet, Activity,
+  Pencil, Trash2, Eye, Globe, Clock, AlertCircle, TrendingUp,
+} from 'lucide-react';
 
 const DashboardPage = () => {
-  const { user } = useAuth();
-  const navigate = useNavigate();
-  const [plans, setPlans] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const { user }                                        = useAuth();
+  const { plans, loading, error, fetchUserPlans, deletePlan } = useTravelPlan();
+  const { showToast }                                   = useToast();
+  const navigate                                        = useNavigate();
 
-  useEffect(() => { loadPlans(); }, []);
+  const [confirmModal, setConfirmModal] = useState(null);
 
-  const loadPlans = async () => {
+  useEffect(() => {
+    fetchUserPlans(user.id);
+  }, [user.id, fetchUserPlans]);
+
+  const handleDeleteClick = (plan, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setConfirmModal({ id: plan.id, name: plan.name });
+  };
+
+  const handleDeleteConfirmed = async (id) => {
     try {
-      const data = await travelPlanService.getUserPlans(user.id);
-      setPlans(data);
+      await deletePlan(id);
+      showToast('Plan putovanja uspješno obrisan.');
     } catch {
-      setError('Greška pri učitavanju planova.');
-    } finally {
-      setLoading(false);
+      showToast('Greška pri brisanju. Pokušajte ponovo.', 'error');
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Da li ste sigurni da želite obrisati ovaj plan putovanja?')) return;
-    try {
-      await travelPlanService.deletePlan(id);
-      setPlans(plans.filter((p) => p.id !== id));
-    } catch {
-      setError('Greška pri brisanju plana.');
-    }
-  };
+  const totalBudget = plans.reduce((s, p) => s + (p.budget || 0), 0);
+  const active      = plans.filter(p => {
+    const now = new Date();
+    return new Date(p.startDate) <= now && new Date(p.endDate) >= now;
+  });
+  const upcoming = plans.filter(p => new Date(p.startDate) > new Date());
 
-  const formatDate = (date) => new Date(date).toLocaleDateString('bs-BA', { day: '2-digit', month: 'short', year: 'numeric' });
-
-  const getDaysLeft = (startDate) => {
-    const days = Math.ceil((new Date(startDate) - new Date()) / (1000 * 60 * 60 * 24));
-    if (days < 0) return null;
-    if (days === 0) return 'Danas!';
-    return `Za ${days} dana`;
-  };
-
-  if (loading) return <LoadingSpinner />;
+  const stats = [
+    { label: 'Ukupno planova', value: plans.length,                    icon: Globe,      color: 'text-primary-500', bg: 'bg-blue-50',    border: 'border-l-primary-500' },
+    { label: 'U toku',         value: active.length,                   icon: TrendingUp, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-l-emerald-500' },
+    { label: 'Predstojeća',    value: upcoming.length,                 icon: Clock,      color: 'text-sky-600',     bg: 'bg-sky-50',     border: 'border-l-sky-500'     },
+    { label: 'Ukupni budžet',  value: `${totalBudget.toLocaleString()} €`, icon: Wallet, color: 'text-violet-600', bg: 'bg-violet-50',  border: 'border-l-violet-500'  },
+  ];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      {/* Header */}
+    <div className="page-container">
+
+      {/* ── ConfirmModal za brisanje plana ── */}
+      {confirmModal && (
+        <ConfirmModal
+          title="Obrisati plan putovanja?"
+          message={`Obrisati "${confirmModal.name}"? Brisat će se i sve destinacije, aktivnosti, troškovi i checklist stavke. Ova akcija se ne može poništiti.`}
+          onConfirm={() => handleDeleteConfirmed(confirmModal.id)}
+          onClose={() => setConfirmModal(null)}
+        />
+      )}
+
+      {/* ── Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">
-            👋 Dobrodošli, {user.firstName}!
+          <h1 className="text-slate-900">
+            Dobrodošli, <span className="text-sky-600">{user.firstName}</span> 👋
           </h1>
-          <p className="text-slate-500 mt-1">Upravljajte svojim planovima putovanja</p>
+          <p className="text-slate-500 mt-1 text-sm">Upravljajte svim planovima putovanja</p>
         </div>
-        <button onClick={() => navigate('/create-plan')} className="btn-primary flex items-center gap-2 self-start sm:self-auto">
-          <span className="text-lg">+</span> Novo putovanje
+        <button onClick={() => navigate('/create-plan')} className="btn-sky self-start">
+          <Plus className="w-4 h-4" /> Novo putovanje
         </button>
       </div>
 
-      {error && <div className="error-box mb-6">{error}</div>}
+      {error && (
+        <div className="alert-error mb-6">
+          <AlertCircle className="w-4 h-4 shrink-0" />{error}
+        </div>
+      )}
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-        {[
-          { label: 'Ukupno planova', value: plans.length, icon: '🗺️', color: 'blue' },
-          { label: 'Predstojeća', value: plans.filter(p => new Date(p.startDate) > new Date()).length, icon: '📅', color: 'emerald' },
-          { label: 'Destinacije', value: plans.reduce((s, p) => s + (p.destinations?.length || 0), 0), icon: '📍', color: 'violet' },
-          { label: 'Aktivnosti', value: plans.reduce((s, p) => s + (p.activities?.length || 0), 0), icon: '🎯', color: 'amber' },
-        ].map((stat) => (
-          <div key={stat.label} className="card p-4">
-            <div className="text-2xl mb-1">{stat.icon}</div>
-            <div className="text-2xl font-bold text-slate-800">{stat.value}</div>
-            <div className="text-xs text-slate-500">{stat.label}</div>
+      {/* ── Stats ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {stats.map(s => (
+          <div key={s.label} className={`card-colored-left ${s.border}`}>
+            <div className={`w-9 h-9 ${s.bg} rounded-xl flex items-center justify-center mb-3`}>
+              <s.icon className={`w-4 h-4 ${s.color}`} />
+            </div>
+            <div className="text-2xl font-bold text-slate-900">{s.value}</div>
+            <div className="text-xs text-slate-500 mt-0.5 font-medium">{s.label}</div>
           </div>
         ))}
       </div>
 
-      {/* Plans Grid */}
-      {plans.length === 0 ? (
-        <div className="card text-center py-16">
-          <div className="text-6xl mb-4">🌍</div>
-          <h3 className="text-xl font-semibold text-slate-700 mb-2">Nema planova putovanja</h3>
-          <p className="text-slate-500 mb-6">Kreirajte prvi plan i počnite planirati avanturu!</p>
-          <button onClick={() => navigate('/create-plan')} className="btn-primary inline-flex">
-            + Kreiraj prvi plan
-          </button>
+      {/* ── Plans header ── */}
+      <div className="flex items-center justify-between mb-5">
+        <h2 className="text-slate-800">Moja putovanja</h2>
+        {plans.length > 0 && <span className="badge-neutral">{plans.length} planova</span>}
+      </div>
+
+      {loading && plans.length === 0 && <SkeletonGrid count={3} />}
+
+      {!loading && plans.length === 0 && (
+        <div className="card">
+          <div className="empty-state">
+            <div className="w-20 h-20 bg-sky-50 rounded-3xl flex items-center justify-center mb-5">
+              <Globe className="w-10 h-10 text-sky-400" />
+            </div>
+            <h3 className="text-lg font-bold text-slate-800 mb-2">Nema planova putovanja</h3>
+            <p className="text-slate-500 text-sm mb-6 max-w-xs">
+              Kreirajte prvi plan i počnite planirati svoju avanturu!
+            </p>
+            <button onClick={() => navigate('/create-plan')} className="btn-sky">
+              <Plus className="w-4 h-4" /> Kreiraj prvi plan
+            </button>
+          </div>
         </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {plans.map((plan) => {
-            const daysLeft = getDaysLeft(plan.startDate);
+      )}
+
+      {/* ── Plans grid ── */}
+      {plans.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+          {plans.map(plan => {
+            const status   = getPlanStatus(plan.startDate, plan.endDate);
+            const duration = getDaysBetween(plan.startDate, plan.endDate);
             return (
-              <div key={plan.id} className="card hover:shadow-md transition-shadow duration-200 flex flex-col">
+              <div key={plan.id} className="card-hover flex flex-col group">
                 <div className="flex items-start justify-between mb-3">
-                  <h3 className="font-semibold text-slate-800 text-lg leading-tight">{plan.name}</h3>
-                  {daysLeft && (
-                    <span className="badge bg-blue-100 text-blue-700 ml-2 shrink-0">{daysLeft}</span>
-                  )}
+                  <div className="flex-1 min-w-0 pr-2">
+                    <h3 className="font-bold text-slate-900 text-base truncate group-hover:text-sky-600 transition-colors">
+                      {plan.name}
+                    </h3>
+                    {plan.description && (
+                      <p className="text-slate-500 text-sm mt-0.5 line-clamp-1">{plan.description}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <div className={`w-2 h-2 rounded-full ${status.dot}`} />
+                    <span className={status.cls}>{status.label}</span>
+                  </div>
                 </div>
 
-                {plan.description && (
-                  <p className="text-slate-500 text-sm mb-3 line-clamp-2">{plan.description}</p>
-                )}
-
-                <div className="flex items-center gap-1 text-sm text-slate-600 mb-2">
-                  <span>📅</span>
-                  <span>{formatDate(plan.startDate)} — {formatDate(plan.endDate)}</span>
+                <div className="flex items-center gap-2 text-sm text-slate-500 mb-2">
+                  <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <span>{formatDateRange(plan.startDate, plan.endDate)}</span>
+                  <span className="text-slate-300 text-xs">·</span>
+                  <span className="text-slate-400 text-xs">{duration} dana</span>
                 </div>
 
-                <div className="flex items-center gap-1 text-sm font-medium text-emerald-600 mb-4">
-                  <span>💰</span>
-                  <span>{plan.budget.toLocaleString()} €</span>
+                <div className="flex items-center gap-2 text-sm font-semibold text-emerald-600 mb-4">
+                  <Wallet className="w-3.5 h-3.5 shrink-0" />
+                  {plan.budget?.toLocaleString()} € budžet
                 </div>
 
-                <div className="flex gap-3 text-xs text-slate-500 mb-4">
-                  <span className="flex items-center gap-1">🗺️ {plan.destinations?.length || 0} destinacija</span>
-                  <span className="flex items-center gap-1">📋 {plan.activities?.length || 0} aktivnosti</span>
+                <div className="flex gap-4 text-xs text-slate-400 pb-4 mb-4 border-b border-slate-100">
+                  <span className="flex items-center gap-1">
+                    <MapPin className="w-3 h-3" />{plan.destinations?.length || 0} destinacija
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Activity className="w-3 h-3" />{plan.activities?.length || 0} aktivnosti
+                  </span>
                 </div>
 
-                <div className="flex gap-2 mt-auto pt-4 border-t border-slate-100">
-                  <Link to={`/plan/${plan.id}`} className="btn-primary flex-1 text-center text-sm py-2">Pregledaj</Link>
-                  <Link to={`/edit-plan/${plan.id}`} className="btn-warning text-sm py-2 px-3">✏️</Link>
-                  <button onClick={() => handleDelete(plan.id)} className="btn-danger text-sm py-2 px-3">🗑️</button>
+                <div className="flex gap-2 mt-auto">
+                  <Link
+                    to={`/plan/${plan.id}`}
+                    className="btn-primary flex-1 text-sm py-2 flex items-center justify-center gap-1.5"
+                  >
+                    <Eye className="w-3.5 h-3.5" /> Pregledaj
+                  </Link>
+                  <Link
+                    to={`/edit-plan/${plan.id}`}
+                    onClick={e => e.stopPropagation()}
+                    className="btn-icon bg-slate-50 hover:bg-sky-50 hover:text-sky-600 border border-slate-200"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </Link>
+                  <button
+                    onClick={e => handleDeleteClick(plan, e)}
+                    className="btn-icon bg-slate-50 hover:bg-rose-50 hover:text-rose-500 border border-slate-200"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
             );

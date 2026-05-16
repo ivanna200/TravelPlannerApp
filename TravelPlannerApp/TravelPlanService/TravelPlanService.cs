@@ -1,4 +1,4 @@
-using Microsoft.ServiceFabric.Services.Communication.Runtime;
+﻿using Microsoft.ServiceFabric.Services.Communication.Runtime;
 using Microsoft.ServiceFabric.Services.Remoting.Runtime;
 using Microsoft.ServiceFabric.Services.Runtime;
 using System.Fabric;
@@ -123,10 +123,23 @@ namespace TravelPlanService
             return await GetSvc(scope).DeleteActivityAsync(id);
         }
 
+
         public async Task<SharePlanDto> CreateShareTokenAsync(CreateShareDto dto)
         {
             using var scope = _serviceProvider.CreateScope();
             return await GetSvc(scope).CreateShareTokenAsync(dto);
+        }
+
+        public async Task<List<SharePlanDto>> GetPlanSharingsAsync(int travelPlanId)
+        {
+            using var scope = _serviceProvider.CreateScope();
+            return await GetSvc(scope).GetPlanSharingsAsync(travelPlanId);
+        }
+
+        public async Task<bool> DeleteShareTokenAsync(int id)
+        {
+            using var scope = _serviceProvider.CreateScope();
+            return await GetSvc(scope).DeleteShareTokenAsync(id);
         }
 
         public async Task<ShareTokenValidationDto> ValidateShareTokenAsync(string token)
