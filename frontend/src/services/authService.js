@@ -3,6 +3,10 @@ import api from './axiosConfig';
 const authService = {
   register: async (data) => {
     const response = await api.post('/api/auth/register', data);
+    if (response.data.user?.token) {
+      localStorage.setItem('token', response.data.user.token);
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+    }
     return response.data;
   },
 

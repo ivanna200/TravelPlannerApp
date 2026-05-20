@@ -150,6 +150,8 @@ namespace UserService.Services
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
             var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
+            var expiryHours = int.TryParse(jwtSettings["ExpiryHours"], out var h) ? h : 8;
+
             var claims = new[]
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
@@ -163,7 +165,7 @@ namespace UserService.Services
                 issuer: jwtSettings["Issuer"],
                 audience: jwtSettings["Audience"],
                 claims: claims,
-                expires: DateTime.UtcNow.AddHours(8),
+                expires: DateTime.UtcNow.AddHours(expiryHours),
                 signingCredentials: credentials
             );
 

@@ -12,10 +12,20 @@ namespace ApiGateway.Controllers
     [Route("api/sharing")]
     public class SharingController : ControllerBase
     {
+        private readonly IConfiguration _configuration;
+
+        public SharingController(IConfiguration configuration)
+        {
+            _configuration = configuration;
+        }
+
         private ITravelPlanService GetProxy() =>
             ServiceProxy.Create<ITravelPlanService>(
                 new Uri("fabric:/TravelPlannerApp/TravelPlanService"),
                 new ServicePartitionKey(0));
+
+        private string GetFrontendUrl() =>
+            _configuration["AppSettings:FrontendUrl"] ?? "http://localhost:5173";
 
         [HttpPost]
         [Authorize]
@@ -53,7 +63,7 @@ namespace ApiGateway.Controllers
             if (!validation.IsValid)
                 return BadRequest(new { message = validation.Message });
 
-            var shareUrl = $"http://localhost:5173/shared/{token}";
+            var shareUrl = $"{GetFrontendUrl()}/shared/{token}";
 
             using var qrGenerator = new QRCodeGenerator();
             var qrCodeData = qrGenerator.CreateQrCode(shareUrl, QRCodeGenerator.ECCLevel.Q);

@@ -23,8 +23,8 @@ const CreateTravelPlanPage = () => {
     e.preventDefault();
     setError('');
 
-    // Validacija — specifikacija zahtjeva provjeru datuma i budžeta
     if (!form.name.trim())    { setError('Naziv putovanja je obavezan.'); return; }
+    if (form.name.length > 200) { setError('Naziv putovanja ne može biti duži od 200 karaktera.'); return; }
     if (!form.startDate)      { setError('Početni datum je obavezan.'); return; }
     if (!form.endDate)        { setError('Krajnji datum je obavezan.'); return; }
     if (new Date(form.endDate) < new Date(form.startDate)) {
@@ -82,8 +82,15 @@ const CreateTravelPlanPage = () => {
               value={form.name}
               onChange={e => f('name', e.target.value)}
               placeholder="npr. Ljetovanje u Grčkoj"
+              maxLength={200}
               required
             />
+            {/* Brojač karaktera — pojavljuje se kad korisnik počne kucati */}
+            {form.name.length > 0 && (
+              <p className={`text-xs mt-1 text-right ${form.name.length > 180 ? 'text-rose-500' : 'text-slate-400'}`}>
+                {form.name.length}/200
+              </p>
+            )}
           </div>
 
           <div>

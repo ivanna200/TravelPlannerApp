@@ -11,5 +11,6 @@ namespace TravelPlanner.Shared.Interfaces
         Task<ChecklistItemDto?> UpdateItemAsync(int id, UpdateChecklistItemDto dto);
         Task<ChecklistItemDto?> ToggleItemAsync(int id);
         Task<bool> DeleteItemAsync(int id);
+        Task<bool> DeletePlanItemsAsync(int travelPlanId);
     }
 }

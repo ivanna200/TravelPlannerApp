@@ -1,9 +1,17 @@
-import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import sharingService from '../services/sharingService';
-import LoadingSpinner from '../components/LoadingSpinner';
-import { formatDate } from '../utils/formatDate';
-import { Eye, Pencil, MapPin, Calendar, Wallet, Activity, Clock, XCircle } from 'lucide-react';
+import { useState, useEffect }  from 'react';
+import { useParams, Link }       from 'react-router-dom';
+import sharingService            from '../services/sharingService';
+import sharedPlanService         from '../services/sharedPlanService';
+import LoadingSpinner            from '../components/LoadingSpinner';
+import Modal                     from '../components/Modal';
+import ConfirmModal              from '../components/ConfirmModal';
+import { useToast }              from '../hooks/useToast';
+import { formatDate, formatDateRange } from '../utils/formatDate';
+import { ACTIVITY_STATUSES }     from '../models/Activity';
+import {
+  Eye, Pencil, MapPin, Calendar, Wallet, Activity,
+  Clock, XCircle, Plus, Trash2, AlertCircle, CheckSquare,
+} from 'lucide-react';
 
 const STATUS_BADGE = {
   'Planirano':   'badge-sky',
@@ -13,10 +21,21 @@ const STATUS_BADGE = {
 };
 
 const SharedPlanPage = () => {
-  const { token }               = useParams();
-  const [data,    setData]      = useState(null);
-  const [error,   setError]     = useState('');
-  const [loading, setLoading]   = useState(true);
+  const { token }     = useParams();
+  const { showToast } = useToast();
+
+  const [data,         setData]         = useState(null);
+  const [error,        setError]        = useState('');
+  const [loading,      setLoading]      = useState(true);
+  const [modal,        setModal]        = useState(null);
+  const [confirmModal, setConfirmModal] = useState(null);
+  const [apiLoading,   setApiLoading]   = useState(false);
+  const [localErr,     setLocalErr]     = useState('');
+
+  const emptyDest = { name: '', location: '', arrivalDate: '', departureDate: '', description: '' };
+  const emptyAct  = { name: '', date: '', time: '', location: '', description: '', estimatedCost: 0, status: 'Planirano' };
+  const [destForm, setDestForm] = useState(emptyDest);
+  const [actForm,  setActForm]  = useState(emptyAct);
 
   useEffect(() => {
     sharingService.getSharedPlan(token)
@@ -24,6 +43,91 @@ const SharedPlanPage = () => {
       .catch(() => setError('Plan nije pronađen ili je link istekao.'))
       .finally(() => setLoading(false));
   }, [token]);
+
+  const planStart = data?.plan?.startDate?.split('T')[0];
+  const planEnd   = data?.plan?.endDate?.split('T')[0];
+
+  const isDateInPlan = (d) => {
+    if (!d || !planStart || !planEnd) return true;
+    return d >= planStart && d <= planEnd;
+  };
+
+  const openModal = (type) => {
+    setDestForm(emptyDest);
+    setActForm(emptyAct);
+    setLocalErr('');
+    setModal(type);
+  };
+
+  const spinBtn = (label) => apiLoading
+    ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Čuvanje...</>
+    : label;
+
+  const handleAddDestination = async (e) => {
+    e.preventDefault();
+    if (!isDateInPlan(destForm.arrivalDate) || !isDateInPlan(destForm.departureDate)) {
+      setLocalErr('Datumi moraju biti unutar perioda putovanja!'); return;
+    }
+    if (destForm.departureDate < destForm.arrivalDate) {
+      setLocalErr('Datum odlaska ne može biti prije datuma dolaska!'); return;
+    }
+    setApiLoading(true);
+    try {
+      const newDest = await sharedPlanService.addDestination(token, { ...destForm, travelPlanId: data.plan.id });
+      setData(prev => ({ ...prev, plan: { ...prev.plan, destinations: [...(prev.plan.destinations || []), newDest] } }));
+      setModal(null);
+      showToast('Destinacija uspješno dodana!');
+    } catch { setLocalErr('Greška pri dodavanju destinacije.'); }
+    finally { setApiLoading(false); }
+  };
+
+  const handleAddActivity = async (e) => {
+    e.preventDefault();
+    if (!isDateInPlan(actForm.date)) {
+      setLocalErr('Datum aktivnosti mora biti unutar perioda putovanja!'); return;
+    }
+    setApiLoading(true);
+    try {
+      const newAct = await sharedPlanService.addActivity(token, {
+        ...actForm,
+        travelPlanId:  data.plan.id,
+        estimatedCost: parseFloat(actForm.estimatedCost) || 0,
+      });
+      setData(prev => ({ ...prev, plan: { ...prev.plan, activities: [...(prev.plan.activities || []), newAct] } }));
+      setModal(null);
+      showToast('Aktivnost uspješno dodana!');
+    } catch { setLocalErr('Greška pri dodavanju aktivnosti.'); }
+    finally { setApiLoading(false); }
+  };
+
+  const handleDeleteDestination = (dest) => {
+    setConfirmModal({
+      name: dest.name,
+      onConfirm: async () => {
+        await sharedPlanService.deleteDestination(token, dest.id);
+        setData(prev => ({ ...prev, plan: { ...prev.plan, destinations: prev.plan.destinations.filter(d => d.id !== dest.id) } }));
+        showToast('Destinacija uspješno obrisana.');
+      },
+    });
+  };
+
+  const handleDeleteActivity = (act) => {
+    setConfirmModal({
+      name: act.name,
+      onConfirm: async () => {
+        await sharedPlanService.deleteActivity(token, act.id);
+        setData(prev => ({ ...prev, plan: { ...prev.plan, activities: prev.plan.activities.filter(a => a.id !== act.id) } }));
+        showToast('Aktivnost uspješno obrisana.');
+      },
+    });
+  };
+
+  const handleDeleteConfirmed = async () => {
+    if (!confirmModal) return;
+    try { await confirmModal.onConfirm(); }
+    catch { showToast('Greška pri brisanju.', 'error'); }
+    finally { setConfirmModal(null); }
+  };
 
   if (loading) return <LoadingSpinner text="Učitavanje dijeljenog plana..." />;
 
@@ -43,12 +147,150 @@ const SharedPlanPage = () => {
   }
 
   const { plan, accessType } = data;
+  const isEdit = accessType === 'EDIT';
+
+  const activitiesByDate = (plan.activities || [])
+    .slice()
+    .sort((a, b) => {
+      const d = new Date(a.date) - new Date(b.date);
+      return d !== 0 ? d : (a.time || '').localeCompare(b.time || '');
+    })
+    .reduce((acc, a) => {
+      const key = formatDate(a.date);
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(a);
+      return acc;
+    }, {});
 
   return (
     <div className="min-h-screen bg-slate-50">
+
+      {confirmModal && (
+        <ConfirmModal
+          title="Potvrdi brisanje"
+          message={`Obrisati "${confirmModal.name}"? Ova akcija se ne može poništiti.`}
+          onConfirm={handleDeleteConfirmed}
+          onClose={() => setConfirmModal(null)}
+        />
+      )}
+
+      {modal === 'dest' && (
+        <Modal title="Nova destinacija" onClose={() => setModal(null)}>
+          <form onSubmit={handleAddDestination} className="space-y-4">
+            <div className="alert-info text-xs">
+              <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+              Datumi moraju biti unutar perioda putovanja: {formatDateRange(plan.startDate, plan.endDate)}
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="label">Naziv *</label>
+                <input className="input" value={destForm.name}
+                  onChange={e => setDestForm({ ...destForm, name: e.target.value })}
+                  placeholder="npr. Pariz" required />
+              </div>
+              <div>
+                <label className="label">Lokacija *</label>
+                <input className="input" value={destForm.location}
+                  onChange={e => setDestForm({ ...destForm, location: e.target.value })}
+                  placeholder="npr. Francuska" required />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="label">Datum dolaska *</label>
+                <input type="date" className="input" value={destForm.arrivalDate}
+                  min={planStart} max={planEnd}
+                  onChange={e => setDestForm({ ...destForm, arrivalDate: e.target.value })} required />
+              </div>
+              <div>
+                <label className="label">Datum odlaska *</label>
+                <input type="date" className="input" value={destForm.departureDate}
+                  min={destForm.arrivalDate || planStart} max={planEnd}
+                  onChange={e => setDestForm({ ...destForm, departureDate: e.target.value })} required />
+              </div>
+            </div>
+            <div>
+              <label className="label">Opis</label>
+              <input className="input" value={destForm.description}
+                onChange={e => setDestForm({ ...destForm, description: e.target.value })}
+                placeholder="Kratki opis..." />
+            </div>
+            {localErr && <div className="alert-error text-xs"><AlertCircle className="w-3.5 h-3.5 shrink-0" />{localErr}</div>}
+            <div className="flex gap-3 pt-2">
+              <button type="button" onClick={() => setModal(null)} className="btn-outline flex-1">Odustani</button>
+              <button type="submit" className="btn-primary flex-1" disabled={apiLoading}>{spinBtn('Sačuvaj')}</button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {modal === 'act' && (
+        <Modal title="Nova aktivnost" onClose={() => setModal(null)}>
+          <form onSubmit={handleAddActivity} className="space-y-4">
+            <div className="alert-info text-xs">
+              <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+              Datum mora biti unutar perioda putovanja: {formatDateRange(plan.startDate, plan.endDate)}
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="label">Naziv *</label>
+                <input className="input" value={actForm.name}
+                  onChange={e => setActForm({ ...actForm, name: e.target.value })}
+                  placeholder="npr. Obilazak muzeja" required />
+              </div>
+              <div>
+                <label className="label">Lokacija</label>
+                <input className="input" value={actForm.location}
+                  onChange={e => setActForm({ ...actForm, location: e.target.value })}
+                  placeholder="npr. Pariz" />
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className="label">Datum *</label>
+                <input type="date" className="input" value={actForm.date}
+                  min={planStart} max={planEnd}
+                  onChange={e => setActForm({ ...actForm, date: e.target.value })} required />
+              </div>
+              <div>
+                <label className="label">Vrijeme</label>
+                <input type="time" className="input" value={actForm.time}
+                  onChange={e => setActForm({ ...actForm, time: e.target.value })} />
+              </div>
+              <div>
+                <label className="label">Trošak (€)</label>
+                <input type="number" min="0" step="0.01" className="input"
+                  value={actForm.estimatedCost}
+                  onChange={e => setActForm({ ...actForm, estimatedCost: e.target.value })} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="label">Status</label>
+                <select className="select" value={actForm.status}
+                  onChange={e => setActForm({ ...actForm, status: e.target.value })}>
+                  {ACTIVITY_STATUSES.map(s => <option key={s}>{s}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="label">Opis</label>
+                <input className="input" value={actForm.description}
+                  onChange={e => setActForm({ ...actForm, description: e.target.value })}
+                  placeholder="Kratki opis..." />
+              </div>
+            </div>
+            {localErr && <div className="alert-error text-xs"><AlertCircle className="w-3.5 h-3.5 shrink-0" />{localErr}</div>}
+            <div className="flex gap-3 pt-2">
+              <button type="button" onClick={() => setModal(null)} className="btn-outline flex-1">Odustani</button>
+              <button type="submit" className="btn-primary flex-1" disabled={apiLoading}>{spinBtn('Sačuvaj')}</button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
       {/* Access type banner */}
-      <div className={`py-3 px-4 text-center text-sm font-semibold ${accessType === 'EDIT' ? 'bg-emerald-500 text-white' : 'bg-primary-500 text-white'}`}>
-        {accessType === 'EDIT'
+      <div className={`py-3 px-4 text-center text-sm font-semibold ${isEdit ? 'bg-emerald-500 text-white' : 'bg-primary-500 text-white'}`}>
+        {isEdit
           ? <><Pencil className="inline w-4 h-4 mr-2" />Dijeljeni plan — Pristup za uređivanje</>
           : <><Eye className="inline w-4 h-4 mr-2" />Dijeljeni plan — Samo pregled</>}
       </div>
@@ -63,76 +305,139 @@ const SharedPlanPage = () => {
             <div className="bg-slate-50 rounded-xl p-3 flex items-center gap-3">
               <Calendar className="w-5 h-5 text-sky-500 shrink-0" />
               <div>
-                <div className="text-xs text-slate-500">Period</div>
-                <div className="text-sm font-semibold text-slate-800">
-                  {formatDate(plan.startDate)} — {formatDate(plan.endDate)}
-                </div>
+                <div className="text-xs text-slate-500">Period putovanja</div>
+                <div className="text-sm font-semibold text-slate-800">{formatDateRange(plan.startDate, plan.endDate)}</div>
               </div>
             </div>
             <div className="bg-emerald-50 rounded-xl p-3 flex items-center gap-3">
               <Wallet className="w-5 h-5 text-emerald-600 shrink-0" />
               <div>
-                <div className="text-xs text-slate-500">Budžet</div>
+                <div className="text-xs text-slate-500">Planirani budžet</div>
                 <div className="text-sm font-bold text-emerald-700">{plan.budget?.toLocaleString()} €</div>
               </div>
             </div>
           </div>
           {plan.notes && (
-            <div className="mt-4 bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm text-amber-800">
-              📝 {plan.notes}
+            <div className="mt-4 bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm text-amber-800 flex gap-2">
+              <span className="shrink-0">📝</span>{plan.notes}
             </div>
           )}
         </div>
 
         {/* Destinacije */}
-        {plan.destinations?.length > 0 && (
-          <div className="card">
-            <h2 className="section-title mb-4">
+        <div className="card">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="section-title">
               <MapPin className="w-5 h-5 text-sky-500" />
-              Destinacije ({plan.destinations.length})
+              Destinacije ({plan.destinations?.length || 0})
             </h2>
+            {isEdit && (
+              <button onClick={() => openModal('dest')} className="btn-sky">
+                <Plus className="w-4 h-4" />Dodaj
+              </button>
+            )}
+          </div>
+          {(!plan.destinations || plan.destinations.length === 0) ? (
+            <div className="empty-state py-6">
+              <MapPin className="w-10 h-10 text-slate-200 mb-2" />
+              <p className="text-slate-400 text-sm">Nema destinacija.</p>
+            </div>
+          ) : (
             <div className="space-y-3">
-              {plan.destinations.map(d => (
+              {plan.destinations.map((d, i) => (
                 <div key={d.id} className="flex gap-3 p-3 bg-slate-50 rounded-xl">
-                  <div className="w-8 h-8 bg-sky-100 rounded-lg flex items-center justify-center shrink-0">
-                    <MapPin className="w-4 h-4 text-sky-600" />
-                  </div>
-                  <div>
+                  <div className="w-9 h-9 bg-sky-500 rounded-xl flex items-center justify-center text-white text-sm font-bold shrink-0">{i + 1}</div>
+                  <div className="flex-1">
                     <div className="font-semibold text-slate-800 text-sm">{d.name}</div>
-                    <div className="text-xs text-slate-500">
-                      {d.location} · {formatDate(d.arrivalDate)} — {formatDate(d.departureDate)}
-                    </div>
+                    <div className="text-xs text-slate-500 flex items-center gap-1 mt-0.5"><MapPin className="w-3 h-3" />{d.location}</div>
+                    <div className="text-xs text-slate-400 flex items-center gap-1 mt-0.5"><Calendar className="w-3 h-3" />{formatDateRange(d.arrivalDate, d.departureDate)}</div>
+                    {d.description && <div className="text-xs text-slate-500 mt-1 bg-white rounded-lg p-1.5">{d.description}</div>}
+                  </div>
+                  {isEdit && (
+                    <button onClick={() => handleDeleteDestination(d)} className="btn-danger shrink-0 self-start">
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Aktivnosti grupisane po datumu */}
+        <div className="card">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="section-title">
+              <Activity className="w-5 h-5 text-primary-500" />
+              Aktivnosti ({plan.activities?.length || 0})
+            </h2>
+            {isEdit && (
+              <button onClick={() => openModal('act')} className="btn-sky">
+                <Plus className="w-4 h-4" />Dodaj
+              </button>
+            )}
+          </div>
+          {(!plan.activities || plan.activities.length === 0) ? (
+            <div className="empty-state py-6">
+              <Activity className="w-10 h-10 text-slate-200 mb-2" />
+              <p className="text-slate-400 text-sm">Nema aktivnosti.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {Object.entries(activitiesByDate).map(([dateKey, dayActs]) => (
+                <div key={dateKey}>
+                  <div className="flex items-center gap-3 mb-2">
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">{dateKey}</span>
+                    <div className="flex-1 h-px bg-slate-100" />
+                    <span className="badge-neutral text-xs">{dayActs.length}</span>
+                  </div>
+                  <div className="space-y-2">
+                    {dayActs.map(a => (
+                      <div key={a.id} className="flex gap-3 p-3 bg-slate-50 rounded-xl">
+                        <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center shrink-0">
+                          <Clock className="w-4 h-4 text-blue-500" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-semibold text-slate-800 text-sm">{a.name}</span>
+                            <span className={`badge text-xs ${STATUS_BADGE[a.status] || 'badge-primary'}`}>{a.status}</span>
+                          </div>
+                          <div className="flex flex-wrap gap-3 mt-0.5 text-xs text-slate-500">
+                            {a.time     && <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{a.time}</span>}
+                            {a.location && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{a.location}</span>}
+                            {a.estimatedCost > 0 && <span className="font-semibold text-emerald-600">💰 {a.estimatedCost} €</span>}
+                          </div>
+                        </div>
+                        {isEdit && (
+                          <button onClick={() => handleDeleteActivity(a)} className="btn-danger shrink-0 self-start">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 </div>
               ))}
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
-        {/* Aktivnosti */}
-        {plan.activities?.length > 0 && (
+        {/* Checklist — samo pregled */}
+        {plan.checklist && plan.checklist.length > 0 && (
           <div className="card">
             <h2 className="section-title mb-4">
-              <Activity className="w-5 h-5 text-primary-500" />
-              Aktivnosti ({plan.activities.length})
+              <CheckSquare className="w-5 h-5 text-violet-500" />
+              Packing lista ({plan.checklist.filter(c => c.isCompleted).length}/{plan.checklist.length})
             </h2>
-            <div className="space-y-2">
-              {plan.activities.map(a => (
-                <div key={a.id} className="flex gap-3 p-3 bg-slate-50 rounded-xl">
-                  <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center shrink-0">
-                    <Clock className="w-4 h-4 text-blue-500" />
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {plan.checklist.map(item => (
+                <div key={item.id} className={`flex items-center gap-2 p-2 rounded-lg ${item.isCompleted ? 'bg-emerald-50' : 'bg-slate-50'}`}>
+                  <div className={`w-4 h-4 rounded flex items-center justify-center shrink-0 ${item.isCompleted ? 'bg-emerald-500' : 'border-2 border-slate-300'}`}>
+                    {item.isCompleted && <span className="text-white text-xs">✓</span>}
                   </div>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-semibold text-slate-800 text-sm">{a.name}</span>
-                      <span className={`badge text-xs ${STATUS_BADGE[a.status] || 'badge-primary'}`}>
-                        {a.status}
-                      </span>
-                    </div>
-                    <div className="text-xs text-slate-500">
-                      {a.location && `${a.location} · `}{formatDate(a.date)}{a.time && ` u ${a.time}`}
-                    </div>
-                  </div>
+                  <span className={`text-xs font-medium ${item.isCompleted ? 'line-through text-slate-400' : 'text-slate-700'}`}>
+                    {item.name}
+                  </span>
                 </div>
               ))}
             </div>

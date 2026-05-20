@@ -105,6 +105,19 @@ namespace ExpenseService.Services
             return true;
         }
 
+        public async Task<bool> DeletePlanExpensesAsync(int travelPlanId)
+        {
+            var expenses = await _context.Expenses
+                .Where(e => e.TravelPlanId == travelPlanId)
+                .ToListAsync();
+
+            if (!expenses.Any()) return true;
+
+            _context.Expenses.RemoveRange(expenses);
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
         public async Task<BudgetSummaryDto> GetBudgetSummaryAsync(int travelPlanId, decimal plannedBudget)
         {
             var expenses = await _context.Expenses

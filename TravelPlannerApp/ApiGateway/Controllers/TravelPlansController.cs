@@ -1,7 +1,8 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.ServiceFabric.Services.Client;
 using Microsoft.ServiceFabric.Services.Remoting.Client;
+using System.Security.Claims;
 using TravelPlanner.Shared.DTOs;
 using TravelPlanner.Shared.Interfaces;
 
@@ -12,23 +13,46 @@ namespace ApiGateway.Controllers
     [Authorize]
     public class TravelPlansController : ControllerBase
     {
-        private ITravelPlanService GetProxy() =>
+        private ITravelPlanService GetTravelProxy() =>
             ServiceProxy.Create<ITravelPlanService>(
                 new Uri("fabric:/TravelPlannerApp/TravelPlanService"),
                 new ServicePartitionKey(0));
 
+        private IExpenseService GetExpenseProxy() =>
+            ServiceProxy.Create<IExpenseService>(
+                new Uri("fabric:/TravelPlannerApp/ExpenseService"),
+                new ServicePartitionKey(0));
+
+        private IChecklistService GetChecklistProxy() =>
+            ServiceProxy.Create<IChecklistService>(
+                new Uri("fabric:/TravelPlannerApp/ChecklistService"));
+
+        private int GetCurrentUserId() =>
+            int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+        private bool IsAdmin() =>
+            User.IsInRole("Admin");
+
         [HttpGet("{id}")]
         public async Task<IActionResult> GetPlan(int id)
         {
-            var plan = await GetProxy().GetTravelPlanAsync(id);
-            if (plan == null) return NotFound(new { message = "Plan nije pronađen." });
+            var plan = await GetTravelProxy().GetTravelPlanAsync(id);
+            if (plan == null)
+                return NotFound(new { message = "Plan nije pronađen." });
+
+            if (!IsAdmin() && plan.UserId != GetCurrentUserId())
+                return Forbid();
+
             return Ok(plan);
         }
 
         [HttpGet("user/{userId}")]
         public async Task<IActionResult> GetUserPlans(int userId)
         {
-            var plans = await GetProxy().GetUserTravelPlansAsync(userId);
+            if (!IsAdmin() && userId != GetCurrentUserId())
+                return Forbid();
+
+            var plans = await GetTravelProxy().GetUserTravelPlansAsync(userId);
             return Ok(plans);
         }
 
@@ -42,7 +66,11 @@ namespace ApiGateway.Controllers
             if (dto.Budget < 0)
                 return BadRequest(new { message = "Budžet ne može biti negativan." });
 
-            var plan = await GetProxy().CreateTravelPlanAsync(dto);
+            // Korisnik može kreirati plan samo za sebe
+            if (!IsAdmin() && dto.UserId != GetCurrentUserId())
+                return Forbid();
+
+            var plan = await GetTravelProxy().CreateTravelPlanAsync(dto);
             return Ok(plan);
         }
 
@@ -54,17 +82,30 @@ namespace ApiGateway.Controllers
             if (dto.Budget < 0)
                 return BadRequest(new { message = "Budžet ne može biti negativan." });
 
-            var plan = await GetProxy().UpdateTravelPlanAsync(id, dto);
-            if (plan == null) return NotFound(new { message = "Plan nije pronađen." });
+            var existing = await GetTravelProxy().GetTravelPlanAsync(id);
+            if (existing == null)
+                return NotFound(new { message = "Plan nije pronađen." });
+            if (!IsAdmin() && existing.UserId != GetCurrentUserId())
+                return Forbid();
+
+            var plan = await GetTravelProxy().UpdateTravelPlanAsync(id, dto);
             return Ok(plan);
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeletePlan(int id)
         {
-            var result = await GetProxy().DeleteTravelPlanAsync(id);
-            if (!result) return NotFound(new { message = "Plan nije pronađen." });
-            return Ok(new { message = "Plan uspješno obrisan." });
+            var existing = await GetTravelProxy().GetTravelPlanAsync(id);
+            if (existing == null)
+                return NotFound(new { message = "Plan nije pronađen." });
+            if (!IsAdmin() && existing.UserId != GetCurrentUserId())
+                return Forbid();
+
+            await GetExpenseProxy().DeletePlanExpensesAsync(id);
+            await GetChecklistProxy().DeletePlanItemsAsync(id);
+            await GetTravelProxy().DeleteTravelPlanAsync(id);
+
+            return Ok(new { message = "Plan i svi povezani podaci su uspješno obrisani." });
         }
     }
 }

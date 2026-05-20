@@ -6,7 +6,6 @@ import activityService    from '../services/activityService';
 import expenseService     from '../services/expenseService';
 import checklistService   from '../services/checklistService';
 
-// ── Initial State ─────────────────────────────────────────────────────────────
 const initialState = {
   plans:         [],
   currentPlan:   null,
@@ -19,7 +18,6 @@ const initialState = {
   error:         null,
 };
 
-// ── Action Types ──────────────────────────────────────────────────────────────
 const ACTION = {
   SET_LOADING:  'SET_LOADING',
   SET_ERROR:    'SET_ERROR',
@@ -30,6 +28,7 @@ const ACTION = {
   UPDATE_PLAN:  'UPDATE_PLAN',
   REMOVE_PLAN:  'REMOVE_PLAN',
 
+  RESET_PLAN_DATA:  'RESET_PLAN_DATA',
   SET_CURRENT_PLAN: 'SET_CURRENT_PLAN',
 
   SET_DESTINATIONS:   'SET_DESTINATIONS',
@@ -55,28 +54,38 @@ const ACTION = {
   SET_BUDGET_SUMMARY: 'SET_BUDGET_SUMMARY',
 };
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
 const sortActivities = (acts) =>
   [...acts].sort((a, b) => {
     const d = new Date(a.date) - new Date(b.date);
-    return d !== 0 ? d : a.time.localeCompare(b.time);
+    return d !== 0 ? d : (a.time || '').localeCompare(b.time || '');
   });
 
-// ── Reducer ───────────────────────────────────────────────────────────────────
 function reducer(state, { type, payload }) {
   switch (type) {
-    case ACTION.SET_LOADING:      return { ...state, loading: payload };
-    case ACTION.SET_ERROR:        return { ...state, error: payload, loading: false };
-    case ACTION.CLEAR_ERROR:      return { ...state, error: null };
+    case ACTION.SET_LOADING: return { ...state, loading: payload };
+    case ACTION.SET_ERROR:   return { ...state, error: payload, loading: false };
+    case ACTION.CLEAR_ERROR: return { ...state, error: null };
 
-    case ACTION.SET_PLANS:        return { ...state, plans: payload, loading: false };
-    case ACTION.ADD_PLAN:         return { ...state, plans: [...state.plans, payload] };
-    case ACTION.UPDATE_PLAN:      return {
+    case ACTION.SET_PLANS:   return { ...state, plans: payload, loading: false };
+    case ACTION.ADD_PLAN:    return { ...state, plans: [...state.plans, payload] };
+    case ACTION.UPDATE_PLAN: return {
       ...state,
       plans:       state.plans.map(p => p.id === payload.id ? payload : p),
       currentPlan: payload,
     };
-    case ACTION.REMOVE_PLAN:      return { ...state, plans: state.plans.filter(p => p.id !== payload) };
+    case ACTION.REMOVE_PLAN: return { ...state, plans: state.plans.filter(p => p.id !== payload) };
+
+    case ACTION.RESET_PLAN_DATA: return {
+      ...state,
+      currentPlan:   null,
+      destinations:  [],
+      activities:    [],
+      expenses:      [],
+      checklist:     [],
+      budgetSummary: null,
+      loading:       true,
+      error:         null,
+    };
 
     case ACTION.SET_CURRENT_PLAN: return { ...state, currentPlan: payload, loading: false };
 
@@ -106,7 +115,6 @@ function reducer(state, { type, payload }) {
   }
 }
 
-// ── Provider — JEDINI export iz ovog fajla ────────────────────────────────────
 export const TravelPlanProvider = ({ children }) => {
   const [state, dispatch] = useReducer(reducer, initialState);
 
@@ -121,7 +129,7 @@ export const TravelPlanProvider = ({ children }) => {
   }, []);
 
   const fetchPlan = useCallback(async (id) => {
-    dispatch({ type: ACTION.SET_LOADING, payload: true });
+    dispatch({ type: ACTION.RESET_PLAN_DATA });
     try {
       const [plan, dests, acts, exps, check] = await Promise.all([
         travelPlanService.getPlan(id),
@@ -142,71 +150,32 @@ export const TravelPlanProvider = ({ children }) => {
     }
   }, []);
 
-  const createPlan = async (data) => {
-    const plan = await travelPlanService.createPlan(data);
-    dispatch({ type: ACTION.ADD_PLAN, payload: plan });
-    return plan;
-  };
+  const createPlan  = async (data)     => { const r = await travelPlanService.createPlan(data);        dispatch({ type: ACTION.ADD_PLAN,    payload: r }); return r; };
+  const updatePlan  = async (id, data) => { const r = await travelPlanService.updatePlan(id, data);     dispatch({ type: ACTION.UPDATE_PLAN, payload: r }); return r; };
+  const deletePlan  = async (id)       => { await travelPlanService.deletePlan(id);                     dispatch({ type: ACTION.REMOVE_PLAN, payload: id }); };
 
-  const updatePlan = async (id, data) => {
-    const updated = await travelPlanService.updatePlan(id, data);
-    dispatch({ type: ACTION.UPDATE_PLAN, payload: updated });
-    return updated;
-  };
+  const addDestination    = async (data)     => { const r = await destinationService.createDestination(data);    dispatch({ type: ACTION.ADD_DESTINATION,    payload: r }); return r; };
+  const updateDestination = async (id, data) => { const r = await destinationService.updateDestination(id,data); dispatch({ type: ACTION.UPDATE_DESTINATION, payload: r }); return r; };
+  const removeDestination = async (id)       => { await destinationService.deleteDestination(id);                dispatch({ type: ACTION.REMOVE_DESTINATION, payload: id }); };
 
-  const deletePlan = async (id) => {
-    await travelPlanService.deletePlan(id);
-    dispatch({ type: ACTION.REMOVE_PLAN, payload: id });
-  };
-
-  const addDestination = async (data) => {
-    const dest = await destinationService.createDestination(data);
-    dispatch({ type: ACTION.ADD_DESTINATION, payload: dest });
-    return dest;
-  };
-
-  const updateDestination = async (id, data) => {
-    const updated = await destinationService.updateDestination(id, data);
-    dispatch({ type: ACTION.UPDATE_DESTINATION, payload: updated });
-    return updated;
-  };
-
-  const removeDestination = async (id) => {
-    await destinationService.deleteDestination(id);
-    dispatch({ type: ACTION.REMOVE_DESTINATION, payload: id });
-  };
-
-  const addActivity = async (data) => {
-    const act = await activityService.createActivity(data);
-    dispatch({ type: ACTION.ADD_ACTIVITY, payload: act });
-    return act;
-  };
-
-  const updateActivity = async (id, data) => {
-    const updated = await activityService.updateActivity(id, data);
-    dispatch({ type: ACTION.UPDATE_ACTIVITY, payload: updated });
-    return updated;
-  };
-
-  const removeActivity = async (id) => {
-    await activityService.deleteActivity(id);
-    dispatch({ type: ACTION.REMOVE_ACTIVITY, payload: id });
-  };
+  const addActivity    = async (data)     => { const r = await activityService.createActivity(data);    dispatch({ type: ACTION.ADD_ACTIVITY,    payload: r }); return r; };
+  const updateActivity = async (id, data) => { const r = await activityService.updateActivity(id,data); dispatch({ type: ACTION.UPDATE_ACTIVITY, payload: r }); return r; };
+  const removeActivity = async (id)       => { await activityService.deleteActivity(id);                dispatch({ type: ACTION.REMOVE_ACTIVITY, payload: id }); };
 
   const addExpense = async (data, planBudget) => {
-    const exp = await expenseService.createExpense(data);
-    dispatch({ type: ACTION.ADD_EXPENSE, payload: exp });
+    const r = await expenseService.createExpense(data);
+    dispatch({ type: ACTION.ADD_EXPENSE, payload: r });
     const summary = await expenseService.getBudgetSummary(data.travelPlanId, planBudget);
     dispatch({ type: ACTION.SET_BUDGET_SUMMARY, payload: summary });
-    return exp;
+    return r;
   };
 
   const updateExpense = async (id, data, travelPlanId, planBudget) => {
-    const updated = await expenseService.updateExpense(id, data);
-    dispatch({ type: ACTION.UPDATE_EXPENSE, payload: updated });
+    const r = await expenseService.updateExpense(id, data);
+    dispatch({ type: ACTION.UPDATE_EXPENSE, payload: r });
     const summary = await expenseService.getBudgetSummary(travelPlanId, planBudget);
     dispatch({ type: ACTION.SET_BUDGET_SUMMARY, payload: summary });
-    return updated;
+    return r;
   };
 
   const removeExpense = async (id, travelPlanId, planBudget) => {
@@ -216,45 +185,21 @@ export const TravelPlanProvider = ({ children }) => {
     dispatch({ type: ACTION.SET_BUDGET_SUMMARY, payload: summary });
   };
 
-  const addChecklistItem = async (data) => {
-    const item = await checklistService.createItem(data);
-    dispatch({ type: ACTION.ADD_CHECKLIST_ITEM, payload: item });
-    return item;
-  };
-
-  const toggleChecklistItem = async (id) => {
-    const updated = await checklistService.toggleItem(id);
-    dispatch({ type: ACTION.UPDATE_CHECKLIST_ITEM, payload: updated });
-    return updated;
-  };
-
-  const removeChecklistItem = async (id) => {
-    await checklistService.deleteItem(id);
-    dispatch({ type: ACTION.REMOVE_CHECKLIST_ITEM, payload: id });
-  };
+  const addChecklistItem    = async (data) => { const r = await checklistService.createItem(data);  dispatch({ type: ACTION.ADD_CHECKLIST_ITEM,    payload: r }); return r; };
+  const toggleChecklistItem = async (id)   => { const r = await checklistService.toggleItem(id);    dispatch({ type: ACTION.UPDATE_CHECKLIST_ITEM, payload: r }); return r; };
+  const removeChecklistItem = async (id)   => { await checklistService.deleteItem(id);               dispatch({ type: ACTION.REMOVE_CHECKLIST_ITEM, payload: id }); };
 
   const clearError = () => dispatch({ type: ACTION.CLEAR_ERROR });
 
   return (
     <TravelPlanContext.Provider value={{
       ...state,
-      fetchUserPlans,
-      fetchPlan,
-      createPlan,
-      updatePlan,
-      deletePlan,
-      addDestination,
-      updateDestination,
-      removeDestination,
-      addActivity,
-      updateActivity,
-      removeActivity,
-      addExpense,
-      updateExpense,
-      removeExpense,
-      addChecklistItem,
-      toggleChecklistItem,
-      removeChecklistItem,
+      fetchUserPlans, fetchPlan,
+      createPlan, updatePlan, deletePlan,
+      addDestination, updateDestination, removeDestination,
+      addActivity, updateActivity, removeActivity,
+      addExpense, updateExpense, removeExpense,
+      addChecklistItem, toggleChecklistItem, removeChecklistItem,
       clearError,
     }}>
       {children}

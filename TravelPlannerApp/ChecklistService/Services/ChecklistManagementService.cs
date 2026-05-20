@@ -77,6 +77,19 @@ namespace ChecklistService.Services
             return true;
         }
 
+        public async Task<bool> DeletePlanItemsAsync(int travelPlanId)
+        {
+            var items = await _context.ChecklistItems
+                .Where(c => c.TravelPlanId == travelPlanId)
+                .ToListAsync();
+
+            if (!items.Any()) return true;
+
+            _context.ChecklistItems.RemoveRange(items);
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
         private static ChecklistItemDto MapToDto(ChecklistItem c) => new()
         {
             Id = c.Id,

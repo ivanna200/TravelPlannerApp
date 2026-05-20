@@ -19,6 +19,15 @@ namespace ApiGateway.Controllers
                 new Uri("fabric:/TravelPlannerApp/TravelPlanService"),
                 new ServicePartitionKey(0));
 
+        private IExpenseService GetExpenseProxy() =>
+            ServiceProxy.Create<IExpenseService>(
+                new Uri("fabric:/TravelPlannerApp/ExpenseService"),
+                new ServicePartitionKey(0));
+
+        private IChecklistService GetChecklistProxy() =>
+            ServiceProxy.Create<IChecklistService>(
+                new Uri("fabric:/TravelPlannerApp/ChecklistService"));
+
         [HttpPost("api/auth/register")]
         public async Task<IActionResult> Register([FromBody] RegisterDto dto)
         {
@@ -64,25 +73,35 @@ namespace ApiGateway.Controllers
             return Ok(users);
         }
 
-        // Kaskadno brisanje - briše korisnika i sve njegove planove
         [HttpDelete("api/users/{id}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteUser(int id)
         {
-            // Prvo obriši sve planove korisnika (kaskadno briše destinacije, aktivnosti, troškove)
+
+            var plans = await GetTravelProxy().GetUserTravelPlansAsync(id);
+
+            foreach (var plan in plans)
+            {
+                await GetExpenseProxy().DeletePlanExpensesAsync(plan.Id);
+                await GetChecklistProxy().DeletePlanItemsAsync(plan.Id);
+            }
+
             await GetTravelProxy().DeleteUserPlansAsync(id);
 
-            // Zatim obriši korisnika
             var result = await GetUserProxy().DeleteUserAsync(id);
             if (!result) return NotFound(new { message = "Korisnik nije pronađen." });
+
             return Ok(new { message = "Korisnik i svi povezani podaci su uspješno obrisani." });
         }
 
         [HttpPatch("api/users/{id}/role")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> ChangeRole(int id, [FromBody] string role)
+        public async Task<IActionResult> ChangeRole(int id, [FromBody] ChangeRoleDto dto)
         {
-            var user = await GetUserProxy().ChangeUserRoleAsync(id, role);
+            if (string.IsNullOrWhiteSpace(dto.Role))
+                return BadRequest(new { message = "Uloga je obavezna." });
+
+            var user = await GetUserProxy().ChangeUserRoleAsync(id, dto.Role);
             if (user == null) return BadRequest(new { message = "Nevalidna uloga ili korisnik nije pronađen." });
             return Ok(user);
         }

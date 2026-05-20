@@ -21,43 +21,43 @@ namespace ChecklistService
         public async Task<ChecklistItemDto?> GetItemAsync(int id)
         {
             using var scope = _serviceProvider.CreateScope();
-            var svc = scope.ServiceProvider.GetRequiredService<ChecklistManagementService>();
-            return await svc.GetItemAsync(id);
+            return await scope.ServiceProvider.GetRequiredService<ChecklistManagementService>().GetItemAsync(id);
         }
 
         public async Task<List<ChecklistItemDto>> GetPlanItemsAsync(int travelPlanId)
         {
             using var scope = _serviceProvider.CreateScope();
-            var svc = scope.ServiceProvider.GetRequiredService<ChecklistManagementService>();
-            return await svc.GetPlanItemsAsync(travelPlanId);
+            return await scope.ServiceProvider.GetRequiredService<ChecklistManagementService>().GetPlanItemsAsync(travelPlanId);
         }
 
         public async Task<ChecklistItemDto> CreateItemAsync(CreateChecklistItemDto dto)
         {
             using var scope = _serviceProvider.CreateScope();
-            var svc = scope.ServiceProvider.GetRequiredService<ChecklistManagementService>();
-            return await svc.CreateItemAsync(dto);
+            return await scope.ServiceProvider.GetRequiredService<ChecklistManagementService>().CreateItemAsync(dto);
         }
 
         public async Task<ChecklistItemDto?> UpdateItemAsync(int id, UpdateChecklistItemDto dto)
         {
             using var scope = _serviceProvider.CreateScope();
-            var svc = scope.ServiceProvider.GetRequiredService<ChecklistManagementService>();
-            return await svc.UpdateItemAsync(id, dto);
+            return await scope.ServiceProvider.GetRequiredService<ChecklistManagementService>().UpdateItemAsync(id, dto);
         }
 
         public async Task<ChecklistItemDto?> ToggleItemAsync(int id)
         {
             using var scope = _serviceProvider.CreateScope();
-            var svc = scope.ServiceProvider.GetRequiredService<ChecklistManagementService>();
-            return await svc.ToggleItemAsync(id);
+            return await scope.ServiceProvider.GetRequiredService<ChecklistManagementService>().ToggleItemAsync(id);
         }
 
         public async Task<bool> DeleteItemAsync(int id)
         {
             using var scope = _serviceProvider.CreateScope();
-            var svc = scope.ServiceProvider.GetRequiredService<ChecklistManagementService>();
-            return await svc.DeleteItemAsync(id);
+            return await scope.ServiceProvider.GetRequiredService<ChecklistManagementService>().DeleteItemAsync(id);
+        }
+
+        public async Task<bool> DeletePlanItemsAsync(int travelPlanId)
+        {
+            using var scope = _serviceProvider.CreateScope();
+            return await scope.ServiceProvider.GetRequiredService<ChecklistManagementService>().DeletePlanItemsAsync(travelPlanId);
         }
 
         protected override IEnumerable<ServiceInstanceListener> CreateServiceInstanceListeners()

@@ -1,12 +1,9 @@
 import axios from 'axios';
-
-// Svi URL-ovi eksternih servisa moraju biti u .env fajlu — specifikacija
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
   headers: { 'Content-Type': 'application/json' },
 });
 
-// Request interceptor — automatski dodaje Bearer token
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
@@ -16,7 +13,6 @@ api.interceptors.request.use(
   (error) => Promise.reject(error),
 );
 
-// Response interceptor — automatski logout pri 401 (token istekao/nevalidan)
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -27,6 +23,25 @@ api.interceptors.response.use(
     }
     return Promise.reject(error);
   },
+);
+
+export const sharedApi = axios.create({
+  baseURL: import.meta.env.VITE_API_URL,
+  headers: { 'Content-Type': 'application/json' },
+});
+
+sharedApi.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) config.headers.Authorization = `Bearer ${token}`;
+    return config;
+  },
+  (error) => Promise.reject(error),
+);
+
+sharedApi.interceptors.response.use(
+  (response) => response,
+  (error) => Promise.reject(error),
 );
 
 export default api;

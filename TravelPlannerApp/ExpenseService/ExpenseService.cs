@@ -21,50 +21,49 @@ namespace ExpenseService
         public async Task<ExpenseDto?> GetExpenseAsync(int id)
         {
             using var scope = _serviceProvider.CreateScope();
-            var svc = scope.ServiceProvider.GetRequiredService<ExpenseManagementService>();
-            return await svc.GetExpenseAsync(id);
+            return await scope.ServiceProvider.GetRequiredService<ExpenseManagementService>().GetExpenseAsync(id);
         }
 
         public async Task<List<ExpenseDto>> GetPlanExpensesAsync(int travelPlanId)
         {
             using var scope = _serviceProvider.CreateScope();
-            var svc = scope.ServiceProvider.GetRequiredService<ExpenseManagementService>();
-            return await svc.GetPlanExpensesAsync(travelPlanId);
+            return await scope.ServiceProvider.GetRequiredService<ExpenseManagementService>().GetPlanExpensesAsync(travelPlanId);
         }
 
         public async Task<List<ExpenseDto>> GetExpensesByCategoryAsync(int travelPlanId, string category)
         {
             using var scope = _serviceProvider.CreateScope();
-            var svc = scope.ServiceProvider.GetRequiredService<ExpenseManagementService>();
-            return await svc.GetExpensesByCategoryAsync(travelPlanId, category);
+            return await scope.ServiceProvider.GetRequiredService<ExpenseManagementService>().GetExpensesByCategoryAsync(travelPlanId, category);
         }
 
         public async Task<ExpenseDto> CreateExpenseAsync(CreateExpenseDto dto)
         {
             using var scope = _serviceProvider.CreateScope();
-            var svc = scope.ServiceProvider.GetRequiredService<ExpenseManagementService>();
-            return await svc.CreateExpenseAsync(dto);
+            return await scope.ServiceProvider.GetRequiredService<ExpenseManagementService>().CreateExpenseAsync(dto);
         }
 
         public async Task<ExpenseDto?> UpdateExpenseAsync(int id, UpdateExpenseDto dto)
         {
             using var scope = _serviceProvider.CreateScope();
-            var svc = scope.ServiceProvider.GetRequiredService<ExpenseManagementService>();
-            return await svc.UpdateExpenseAsync(id, dto);
+            return await scope.ServiceProvider.GetRequiredService<ExpenseManagementService>().UpdateExpenseAsync(id, dto);
         }
 
         public async Task<bool> DeleteExpenseAsync(int id)
         {
             using var scope = _serviceProvider.CreateScope();
-            var svc = scope.ServiceProvider.GetRequiredService<ExpenseManagementService>();
-            return await svc.DeleteExpenseAsync(id);
+            return await scope.ServiceProvider.GetRequiredService<ExpenseManagementService>().DeleteExpenseAsync(id);
+        }
+
+        public async Task<bool> DeletePlanExpensesAsync(int travelPlanId)
+        {
+            using var scope = _serviceProvider.CreateScope();
+            return await scope.ServiceProvider.GetRequiredService<ExpenseManagementService>().DeletePlanExpensesAsync(travelPlanId);
         }
 
         public async Task<BudgetSummaryDto> GetBudgetSummaryAsync(int travelPlanId, decimal plannedBudget)
         {
             using var scope = _serviceProvider.CreateScope();
-            var svc = scope.ServiceProvider.GetRequiredService<ExpenseManagementService>();
-            return await svc.GetBudgetSummaryAsync(travelPlanId, plannedBudget);
+            return await scope.ServiceProvider.GetRequiredService<ExpenseManagementService>().GetBudgetSummaryAsync(travelPlanId, plannedBudget);
         }
 
         protected override IEnumerable<ServiceReplicaListener> CreateServiceReplicaListeners()

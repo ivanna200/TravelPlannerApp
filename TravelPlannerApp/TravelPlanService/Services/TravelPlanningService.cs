@@ -8,11 +8,16 @@ namespace TravelPlanService.Services
     public class TravelPlanningService
     {
         private readonly TravelPlanDbContext _context;
+        private readonly IConfiguration _configuration;
 
-        public TravelPlanningService(TravelPlanDbContext context)
+        public TravelPlanningService(TravelPlanDbContext context, IConfiguration configuration)
         {
             _context = context;
+            _configuration = configuration;
         }
+
+        private string GetFrontendUrl() =>
+            _configuration["AppSettings:FrontendUrl"] ?? "http://localhost:5173";
 
         public async Task<TravelPlanDto?> GetTravelPlanAsync(int id)
         {
@@ -242,7 +247,7 @@ namespace TravelPlanService.Services
                 AccessType = dto.AccessType,
                 TravelPlanId = dto.TravelPlanId,
                 ExpiresAt = shareToken.ExpiresAt,
-                ShareUrl = $"http://localhost:5173/shared/{token}"
+                ShareUrl = $"{GetFrontendUrl()}/shared/{token}"
             };
         }
 
@@ -260,7 +265,7 @@ namespace TravelPlanService.Services
                 AccessType = s.AccessType,
                 TravelPlanId = s.TravelPlanId,
                 ExpiresAt = s.ExpiresAt,
-                ShareUrl = $"http://localhost:5173/shared/{s.Token}"
+                ShareUrl = $"{GetFrontendUrl()}/shared/{s.Token}"
             }).ToList();
         }
 

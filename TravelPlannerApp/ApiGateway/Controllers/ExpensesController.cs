@@ -54,8 +54,15 @@ namespace ApiGateway.Controllers
             if (dto.Amount <= 0)
                 return BadRequest(new { message = "Iznos mora biti pozitivan." });
 
-            var expense = await GetProxy().CreateExpenseAsync(dto);
-            return Ok(expense);
+            try
+            {
+                var expense = await GetProxy().CreateExpenseAsync(dto);
+                return Ok(expense);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         [HttpPut("{id}")]
@@ -64,9 +71,16 @@ namespace ApiGateway.Controllers
             if (dto.Amount <= 0)
                 return BadRequest(new { message = "Iznos mora biti pozitivan." });
 
-            var expense = await GetProxy().UpdateExpenseAsync(id, dto);
-            if (expense == null) return NotFound(new { message = "Trošak nije pronađen." });
-            return Ok(expense);
+            try
+            {
+                var expense = await GetProxy().UpdateExpenseAsync(id, dto);
+                if (expense == null) return NotFound(new { message = "Trošak nije pronađen." });
+                return Ok(expense);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         [HttpDelete("{id}")]

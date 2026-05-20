@@ -1,15 +1,15 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useParams, Link } from 'react-router-dom';
+import { useState, useEffect, useCallback } from 'react';
+import { useNavigate, useParams, Link }      from 'react-router-dom';
 import { useTravelPlan } from '../hooks/useTravelPlan';
 import { useToast }      from '../hooks/useToast';
 import { ArrowLeft, Pencil, AlertCircle } from 'lucide-react';
 import LoadingSpinner from '../components/LoadingSpinner';
 
 const EditTravelPlanPage = () => {
-  const { id }                              = useParams();
+  const { id }                                 = useParams();
   const { currentPlan, fetchPlan, updatePlan } = useTravelPlan();
-  const { showToast }                       = useToast();
-  const navigate                            = useNavigate();
+  const { showToast }                          = useToast();
+  const navigate                               = useNavigate();
 
   const [form,    setForm]    = useState(null);
   const [error,   setError]   = useState('');
@@ -17,8 +17,8 @@ const EditTravelPlanPage = () => {
 
   const f = (key, val) => setForm(p => ({ ...p, [key]: val }));
 
-  // Popuni formu kad plan postane dostupan u contextu
-  const populateForm = (plan) => {
+  // useCallback daje stabilnu referencu, sprječava beskonačnu petlju u useEffect
+  const populateForm = useCallback((plan) => {
     setForm({
       name:        plan.name,
       description: plan.description  || '',
@@ -27,7 +27,7 @@ const EditTravelPlanPage = () => {
       budget:      plan.budget,
       notes:       plan.notes || '',
     });
-  };
+  }, []);
 
   useEffect(() => {
     if (currentPlan && String(currentPlan.id) === String(id)) {
@@ -35,19 +35,14 @@ const EditTravelPlanPage = () => {
     } else {
       fetchPlan(id).catch(() => setError('Greška pri učitavanju plana.'));
     }
-  }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    if (currentPlan && String(currentPlan.id) === String(id) && !form) {
-      populateForm(currentPlan);
-    }
-  }, [currentPlan, id, form]);
+  }, [id, currentPlan, fetchPlan, populateForm]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
     if (!form.name.trim()) { setError('Naziv putovanja je obavezan.'); return; }
+    if (form.name.length > 200) { setError('Naziv putovanja ne može biti duži od 200 karaktera.'); return; }
     if (new Date(form.endDate) < new Date(form.startDate)) {
       setError('Krajnji datum ne može biti prije početnog.'); return;
     }
@@ -95,14 +90,24 @@ const EditTravelPlanPage = () => {
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <label className="label">Naziv *</label>
-              <input className="input" value={form.name} onChange={e => f('name', e.target.value)} required />
+              <input
+                className="input"
+                value={form.name}
+                onChange={e => f('name', e.target.value)}
+                maxLength={200}
+                required
+              />
+              {/* Brojač karaktera — pojavljuje se kad korisnik počne kucati */}
+              {form.name.length > 0 && (
+                <p className={`text-xs mt-1 text-right ${form.name.length > 180 ? 'text-rose-500' : 'text-slate-400'}`}>
+                  {form.name.length}/200
+                </p>
+              )}
             </div>
-
             <div>
               <label className="label">Opis</label>
               <textarea className="input resize-none" value={form.description} onChange={e => f('description', e.target.value)} rows={3} />
             </div>
-
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="label">Početni datum *</label>
@@ -113,7 +118,6 @@ const EditTravelPlanPage = () => {
                 <input type="date" className="input" value={form.endDate} min={form.startDate} onChange={e => f('endDate', e.target.value)} required />
               </div>
             </div>
-
             <div>
               <label className="label">Budžet (€)</label>
               <div className="relative">
@@ -121,16 +125,12 @@ const EditTravelPlanPage = () => {
                 <input type="number" min="0" step="0.01" className="input pl-8" value={form.budget} onChange={e => f('budget', e.target.value)} />
               </div>
             </div>
-
             <div>
               <label className="label">Napomene</label>
               <textarea className="input resize-none" value={form.notes} onChange={e => f('notes', e.target.value)} rows={3} />
             </div>
-
             <div className="flex gap-3 pt-2 border-t border-slate-100">
-              <button type="button" onClick={() => navigate(`/plan/${id}`)} className="btn-outline flex-1">
-                Odustani
-              </button>
+              <button type="button" onClick={() => navigate(`/plan/${id}`)} className="btn-outline flex-1">Odustani</button>
               <button type="submit" className="btn-primary flex-1" disabled={loading}>
                 {loading
                   ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Čuvanje...</>

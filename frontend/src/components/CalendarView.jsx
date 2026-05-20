@@ -17,7 +17,6 @@ const STATUS_BADGE = {
 };
 
 const CalendarView = ({ activities, startDate, endDate }) => {
-  // Generišemo niz svih dana između startDate i endDate
   const days = [];
   const cur  = new Date(startDate);
   const end  = new Date(endDate);
@@ -30,11 +29,13 @@ const CalendarView = ({ activities, startDate, endDate }) => {
   const [startIdx,    setStartIdx]    = useState(0);
   const VISIBLE = 7;
 
-  const visibleDays  = days.slice(startIdx, startIdx + VISIBLE);
-  const getActs      = (day) =>
+  const visibleDays = days.slice(startIdx, startIdx + VISIBLE);
+
+  const getActs = (day) =>
     activities
       .filter(a => new Date(a.date).toDateString() === day.toDateString())
-      .sort((a, b) => a.time.localeCompare(b.time));
+      .sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+
   const hasActs      = (day) => getActs(day).length > 0;
   const selectedActs = getActs(selectedDay);
 
