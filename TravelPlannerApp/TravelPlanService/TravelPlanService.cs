@@ -136,6 +136,12 @@ namespace TravelPlanService
             return await GetSvc(scope).GetPlanSharingsAsync(travelPlanId);
         }
 
+        public async Task<SharePlanDto?> GetShareTokenByIdAsync(int id)
+        {
+            using var scope = _serviceProvider.CreateScope();
+            return await GetSvc(scope).GetShareTokenByIdAsync(id);
+        }
+
         public async Task<bool> DeleteShareTokenAsync(int id)
         {
             using var scope = _serviceProvider.CreateScope();

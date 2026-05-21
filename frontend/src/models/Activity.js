@@ -6,8 +6,8 @@ export const createActivity = (data) => ({
   location:      data.location      || '',
   description:   data.description   || '',
   estimatedCost: data.estimatedCost || 0,
-  status:        data.status        || 'Planirano',
+  status:        data.status        || 'Planned',
   travelPlanId:  data.travelPlanId  || null,
 });
 
-export const ACTIVITY_STATUSES = ['Planirano', 'Rezervisano', 'Završeno', 'Otkazano'];
+export const ACTIVITY_STATUSES = ['Planned', 'Reserved', 'Completed', 'Cancelled'];

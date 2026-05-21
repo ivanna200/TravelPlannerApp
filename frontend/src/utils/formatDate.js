@@ -8,7 +8,7 @@ const toDate = (d) => {
 export const formatDate = (d) => {
   const date = toDate(d);
   if (!date) return '';
-  return date.toLocaleDateString('bs-BA', {
+  return date.toLocaleDateString('en-US', {
     day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC',
   });
 };
@@ -16,7 +16,7 @@ export const formatDate = (d) => {
 export const formatDateLong = (d) => {
   const date = toDate(d);
   if (!date) return '';
-  return date.toLocaleDateString('bs-BA', {
+  return date.toLocaleDateString('en-US', {
     day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC',
   });
 };
@@ -24,7 +24,7 @@ export const formatDateLong = (d) => {
 export const formatDateShort = (d) => {
   const date = toDate(d);
   if (!date) return '';
-  return date.toLocaleDateString('bs-BA', {
+  return date.toLocaleDateString('en-US', {
     day: '2-digit', month: 'short', timeZone: 'UTC',
   });
 };
@@ -43,10 +43,10 @@ export const getPlanStatus = (startDate, endDate) => {
   const end      = new Date(endDate);
   const daysLeft = Math.ceil((start - now) / (1000 * 60 * 60 * 24));
 
-  if (now >= start && now <= end) return { label: 'U toku',        cls: 'badge-success', dot: 'bg-emerald-500' };
-  if (now > end)                  return { label: 'Završeno',      cls: 'badge-neutral',  dot: 'bg-slate-400'  };
-  if (daysLeft === 0)             return { label: 'Danas!',        cls: 'badge-warning',  dot: 'bg-amber-500'  };
-  if (daysLeft <= 7)              return { label: `Za ${daysLeft}d`, cls: 'badge-warning', dot: 'bg-amber-500' };
-  if (daysLeft <= 30)             return { label: `Za ${daysLeft}d`, cls: 'badge-sky',    dot: 'bg-sky-500'   };
-  return                               { label: `Za ${daysLeft}d`, cls: 'badge-primary',  dot: 'bg-blue-400'  };
+  if (now >= start && now <= end) return { label: 'In Progress', cls: 'badge-success', dot: 'bg-emerald-500' };
+  if (now > end)                  return { label: 'Completed',   cls: 'badge-neutral',  dot: 'bg-slate-400'  };
+  if (daysLeft === 0)             return { label: 'Today!',      cls: 'badge-warning',  dot: 'bg-amber-500'  };
+  if (daysLeft <= 7)              return { label: `In ${daysLeft}d`, cls: 'badge-warning', dot: 'bg-amber-500' };
+  if (daysLeft <= 30)             return { label: `In ${daysLeft}d`, cls: 'badge-sky',    dot: 'bg-sky-500'   };
+  return                               { label: `In ${daysLeft}d`, cls: 'badge-primary',  dot: 'bg-blue-400'  };
 };

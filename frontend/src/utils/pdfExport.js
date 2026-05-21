@@ -1,25 +1,25 @@
 import { formatDate, formatDateRange } from './formatDate';
 
 const STATUS_COLORS = {
-  'Planirano':   '#0ea5e9',
-  'Rezervisano': '#8b5cf6',
-  'Završeno':    '#10b981',
-  'Otkazano':    '#f43f5e',
+  'Planned':   '#0ea5e9',
+  'Reserved':  '#8b5cf6',
+  'Completed': '#10b981',
+  'Cancelled': '#f43f5e',
 };
 
 const CATEGORY_ICONS = {
-  'Prevoz':   '✈️',
-  'Smještaj': '🏨',
-  'Hrana':    '🍽️',
-  'Ulaznice': '🎟️',
-  'Kupovina': '🛍️',
-  'Ostalo':   '📦',
+  'Transport':     '✈️',
+  'Accommodation': '🏨',
+  'Food':          '🍽️',
+  'Tickets':       '🎟️',
+  'Shopping':      '🛍️',
+  'Other':         '📦',
 };
 
 export const generatePlanPDF = ({ plan, destinations, activities, expenses, checklist, budgetSummary }) => {
   const printWindow = window.open('', '_blank');
   if (!printWindow) {
-    alert('Dozvolite pop-up prozore da biste preuzeli PDF izvještaj.');
+    alert('Please allow pop-ups to download the PDF report.');
     return;
   }
 
@@ -38,7 +38,7 @@ export const generatePlanPDF = ({ plan, destinations, activities, expenses, chec
 
   const html = `
 <!DOCTYPE html>
-<html lang="bs">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <title>TravelPlanner — ${plan.name}</title>
@@ -119,27 +119,27 @@ export const generatePlanPDF = ({ plan, destinations, activities, expenses, chec
   <div class="header">
     <div class="header-left">
       <h1>${plan.name}</h1>
-      <p>${plan.description || 'Plan putovanja'}</p>
+      <p>${plan.description || 'Travel plan'}</p>
     </div>
     <div class="header-right">
       <div class="logo">✈️ TravelPlanner</div>
-      <div style="margin-top:4px;">Generisano: ${formatDate(new Date())}</div>
+      <div style="margin-top:4px;">Generated: ${formatDate(new Date())}</div>
     </div>
   </div>
 
   <div class="section">
-    <div class="section-title">📋 Osnovni podaci</div>
+    <div class="section-title">📋 Overview</div>
     <div class="info-grid">
       <div class="info-card">
-        <div class="label">Period putovanja</div>
+        <div class="label">Travel period</div>
         <div class="value">${formatDateRange(plan.startDate, plan.endDate)}</div>
       </div>
       <div class="info-card">
-        <div class="label">Planirani budžet</div>
+        <div class="label">Planned budget</div>
         <div class="value" style="color:#059669;">${plan.budget?.toLocaleString()} €</div>
       </div>
       <div class="info-card">
-        <div class="label">Destinacije / Aktivnosti</div>
+        <div class="label">Destinations / Activities</div>
         <div class="value">${(destinations || []).length} / ${(activities || []).length}</div>
       </div>
     </div>
@@ -148,18 +148,18 @@ export const generatePlanPDF = ({ plan, destinations, activities, expenses, chec
 
   ${budgetSummary ? `
   <div class="section">
-    <div class="section-title">💰 Finansijski pregled</div>
+    <div class="section-title">💰 Financial overview</div>
     <div class="info-grid">
       <div class="info-card">
-        <div class="label">Planirani budžet</div>
+        <div class="label">Planned budget</div>
         <div class="value">${budgetSummary.plannedBudget} €</div>
       </div>
       <div class="info-card">
-        <div class="label">Potrošeno</div>
+        <div class="label">Spent</div>
         <div class="value" style="color:#f43f5e;">${budgetSummary.totalExpenses} €</div>
       </div>
       <div class="info-card">
-        <div class="label">Preostalo</div>
+        <div class="label">Remaining</div>
         <div class="value" style="color:${budgetSummary.remainingBudget >= 0 ? '#059669' : '#f43f5e'};">
           ${budgetSummary.remainingBudget} €
         </div>
@@ -168,13 +168,13 @@ export const generatePlanPDF = ({ plan, destinations, activities, expenses, chec
     <div class="budget-bar-wrap">
       <div class="budget-bar" style="width:${budgetPct}%;background:${budgetPct > 90 ? '#f43f5e' : budgetPct > 70 ? '#f59e0b' : '#10b981'};"></div>
     </div>
-    <div style="font-size:11px;color:#64748b;text-align:right;">${budgetPct}% budžeta iskorišćeno</div>
+    <div style="font-size:11px;color:#64748b;text-align:right;">${budgetPct}% of budget used</div>
   </div>
   ` : ''}
 
   ${(destinations || []).length > 0 ? `
   <div class="section">
-    <div class="section-title">📍 Destinacije (${destinations.length})</div>
+    <div class="section-title">📍 Destinations (${destinations.length})</div>
     ${destinations.map((d, i) => `
       <div class="dest-item">
         <div class="dest-num">${i + 1}</div>
@@ -190,7 +190,7 @@ export const generatePlanPDF = ({ plan, destinations, activities, expenses, chec
 
   ${(activities || []).length > 0 ? `
   <div class="section">
-    <div class="section-title">🗓️ Raspored aktivnosti (${activities.length})</div>
+    <div class="section-title">🗓️ Activity schedule (${activities.length})</div>
     ${Object.entries(actByDate).map(([date, acts]) => `
       <div class="date-group">
         <div class="date-label">${date}</div>
@@ -214,10 +214,10 @@ export const generatePlanPDF = ({ plan, destinations, activities, expenses, chec
 
   ${(expenses || []).length > 0 ? `
   <div class="section">
-    <div class="section-title">💳 Evidencija troškova (${expenses.length})</div>
+    <div class="section-title">💳 Expense log (${expenses.length})</div>
     <div style="border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;">
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;padding:8px 12px;background:#f8fafc;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;">
-        <span>Naziv</span><span>Kategorija</span><span>Datum</span><span>Iznos</span>
+        <span>Name</span><span>Category</span><span>Date</span><span>Amount</span>
       </div>
       ${expenses.map(exp => `
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;padding:8px 12px;border-top:1px solid #f1f5f9;font-size:12px;align-items:center;">
@@ -228,7 +228,7 @@ export const generatePlanPDF = ({ plan, destinations, activities, expenses, chec
         </div>
       `).join('')}
       <div style="display:grid;grid-template-columns:1fr auto;padding:10px 12px;background:#f8fafc;border-top:2px solid #e2e8f0;font-weight:700;">
-        <span>Ukupno</span>
+        <span>Total</span>
         <span style="color:#f43f5e;">${budgetSummary?.totalExpenses ?? expenses.reduce((s, e) => s + e.amount, 0)} €</span>
       </div>
     </div>
@@ -237,7 +237,7 @@ export const generatePlanPDF = ({ plan, destinations, activities, expenses, chec
 
   ${(checklist || []).length > 0 ? `
   <div class="section">
-    <div class="section-title">✅ Packing lista (${completedItems}/${checklist.length} završeno)</div>
+    <div class="section-title">✅ Packing list (${completedItems}/${checklist.length} completed)</div>
     <div class="check-grid">
       ${checklist.map(item => `
         <div class="check-item">
@@ -250,8 +250,8 @@ export const generatePlanPDF = ({ plan, destinations, activities, expenses, chec
   ` : ''}
 
   <div class="footer">
-    <span>TravelPlanner — Plan putovanja</span>
-    <span>Generisano ${new Date().toLocaleDateString('bs-BA')} u ${new Date().toLocaleTimeString('bs-BA', { hour: '2-digit', minute: '2-digit' })}</span>
+    <span>TravelPlanner — Travel plan</span>
+    <span>Generated ${new Date().toLocaleDateString('en-US')} at ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
   </div>
 
   <script>

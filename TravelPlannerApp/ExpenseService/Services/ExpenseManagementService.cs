@@ -1,25 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using TravelPlanner.Shared.Constants;
 using TravelPlanner.Shared.DTOs;
 using ExpenseService.Data;
 using ExpenseService.Models;
 
 namespace ExpenseService.Services
 {
-    public static class ExpenseCategories
-    {
-        public const string Prevoz = "Prevoz";
-        public const string Smjestaj = "Smještaj";
-        public const string Hrana = "Hrana";
-        public const string Ulaznice = "Ulaznice";
-        public const string Kupovina = "Kupovina";
-        public const string Ostalo = "Ostalo";
-
-        public static readonly List<string> All = new()
-        {
-            Prevoz, Smjestaj, Hrana, Ulaznice, Kupovina, Ostalo
-        };
-    }
-
     public class ExpenseManagementService
     {
         private readonly ExpenseDbContext _context;
@@ -56,10 +42,10 @@ namespace ExpenseService.Services
         public async Task<ExpenseDto> CreateExpenseAsync(CreateExpenseDto dto)
         {
             if (dto.Amount <= 0)
-                throw new ArgumentException("Iznos troška mora biti pozitivan.");
+                throw new ArgumentException("Expense amount must be positive.");
 
             if (!ExpenseCategories.All.Contains(dto.Category))
-                throw new ArgumentException($"Nevalidna kategorija. Dozvoljene: {string.Join(", ", ExpenseCategories.All)}");
+                throw new ArgumentException($"Invalid category. Allowed: {string.Join(", ", ExpenseCategories.All)}");
 
             var expense = new Expense
             {
@@ -83,7 +69,10 @@ namespace ExpenseService.Services
             if (expense == null) return null;
 
             if (dto.Amount <= 0)
-                throw new ArgumentException("Iznos troška mora biti pozitivan.");
+                throw new ArgumentException("Expense amount must be positive.");
+
+            if (!ExpenseCategories.All.Contains(dto.Category))
+                throw new ArgumentException($"Invalid category. Allowed: {string.Join(", ", ExpenseCategories.All)}");
 
             expense.Name = dto.Name;
             expense.Category = dto.Category;

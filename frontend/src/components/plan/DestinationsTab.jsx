@@ -13,90 +13,88 @@ const DestinationsTab = ({ hook, planStart, planEnd, dateRangeLabel }) => {
   } = hook;
 
   const spinBtn = (label) => loading
-    ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Čuvanje...</>
+    ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Saving...</>
     : label;
 
   const formFields = (
     <>
       <div className="alert-info text-xs">
         <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-        Datumi moraju biti unutar perioda putovanja: {dateRangeLabel}
+        Dates must be within the travel period: {dateRangeLabel}
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="label">Naziv *</label>
+          <label className="label">Name *</label>
           <input className="input" value={form.name}
             onChange={e => setForm({ ...form, name: e.target.value })}
-            placeholder="npr. Pariz" required />
+            placeholder="e.g. Paris" required />
         </div>
         <div>
-          <label className="label">Lokacija *</label>
+          <label className="label">Location *</label>
           <input className="input" value={form.location}
             onChange={e => setForm({ ...form, location: e.target.value })}
-            placeholder="npr. Francuska" required />
+            placeholder="e.g. France" required />
         </div>
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="label">Datum dolaska *</label>
+          <label className="label">Arrival date *</label>
           <input type="date" className="input" value={form.arrivalDate}
             min={planStart} max={planEnd}
             onChange={e => setForm({ ...form, arrivalDate: e.target.value })} required />
         </div>
         <div>
-          <label className="label">Datum odlaska *</label>
+          <label className="label">Departure date *</label>
           <input type="date" className="input" value={form.departureDate}
             min={form.arrivalDate || planStart} max={planEnd}
             onChange={e => setForm({ ...form, departureDate: e.target.value })} required />
         </div>
       </div>
       <div>
-        <label className="label">Opis / napomene</label>
+        <label className="label">Description / notes</label>
         <input className="input" value={form.description}
           onChange={e => setForm({ ...form, description: e.target.value })}
-          placeholder="Kratki opis..." />
+          placeholder="Short description..." />
       </div>
     </>
   );
 
   return (
     <>
-      {/* ── Modali ── */}
       {confirmModal && (
         <ConfirmModal
-          title="Obrisati destinaciju?"
-          message={`Obrisati "${confirmModal.name}"? Ova akcija se ne može poništiti.`}
+          title="Delete destination?"
+          message={`Delete "${confirmModal.name}"? This action cannot be undone.`}
           onConfirm={handleDeleteConfirmed}
           onClose={() => setConfirmModal(null)}
         />
       )}
       {(modal === 'add' || modal === 'edit') && (
         <Modal
-          title={modal === 'add' ? 'Nova destinacija' : 'Uredi destinaciju'}
+          title={modal === 'add' ? 'New destination' : 'Edit destination'}
           onClose={closeModal}
         >
           <form onSubmit={handleSubmit} className="space-y-4">
             {formFields}
             {error && <div className="alert-error text-xs"><AlertCircle className="w-3.5 h-3.5 shrink-0" />{error}</div>}
             <div className="flex gap-3 pt-2">
-              <button type="button" onClick={closeModal} className="btn-outline flex-1">Odustani</button>
+              <button type="button" onClick={closeModal} className="btn-outline flex-1">Cancel</button>
               <button type="submit" className="btn-primary flex-1" disabled={loading}>
-                {spinBtn(modal === 'add' ? 'Sačuvaj destinaciju' : 'Ažuriraj destinaciju')}
+                {spinBtn(modal === 'add' ? 'Save destination' : 'Update destination')}
               </button>
             </div>
           </form>
         </Modal>
       )}
 
-      {/* ── Sadržaj ── */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="section-title">
             <MapPin className="w-5 h-5 text-sky-500" />
-            Destinacije ({destinations.length})
+            Destinations ({destinations.length})
           </h2>
           <button onClick={openAdd} className="btn-sky">
-            <Plus className="w-4 h-4" />Dodaj
+            <Plus className="w-4 h-4" />Add
           </button>
         </div>
 
@@ -105,7 +103,7 @@ const DestinationsTab = ({ hook, planStart, planEnd, dateRangeLabel }) => {
             <div className="empty-state">
               <MapPin className="w-12 h-12 text-slate-200 mb-3" />
               <p className="text-slate-400 font-medium text-sm">
-                Nema destinacija. Dodajte prvu destinaciju klikom na dugme gore.
+                No destinations. Add your first destination using the button above.
               </p>
             </div>
           </div>

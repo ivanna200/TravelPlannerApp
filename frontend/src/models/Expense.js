@@ -1,7 +1,7 @@
 export const createExpense = (data) => ({
   id:           data.id           || null,
   name:         data.name         || '',
-  category:     data.category     || '',
+  category:     data.category     || 'Transport',
   amount:       data.amount       || 0,
   date:         data.date         || '',
   description:  data.description  || '',
@@ -9,10 +9,10 @@ export const createExpense = (data) => ({
 });
 
 export const EXPENSE_CATEGORIES = [
-  'Prevoz',
-  'Smještaj',
-  'Hrana',
-  'Ulaznice',
-  'Kupovina',
-  'Ostalo',
+  'Transport',
+  'Accommodation',
+  'Food',
+  'Tickets',
+  'Shopping',
+  'Other',
 ];

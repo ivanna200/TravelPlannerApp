@@ -38,7 +38,7 @@ namespace ApiGateway.Controllers
         {
             var plan = await GetTravelProxy().GetTravelPlanAsync(id);
             if (plan == null)
-                return NotFound(new { message = "Plan nije pronađen." });
+                return NotFound(new { message = "Travel plan not found." });
 
             if (!IsAdmin() && plan.UserId != GetCurrentUserId())
                 return Forbid();
@@ -60,36 +60,49 @@ namespace ApiGateway.Controllers
         public async Task<IActionResult> CreatePlan([FromBody] CreateTravelPlanDto dto)
         {
             if (string.IsNullOrWhiteSpace(dto.Name))
-                return BadRequest(new { message = "Naziv plana je obavezan." });
+                return BadRequest(new { message = "Plan name is required." });
             if (dto.EndDate < dto.StartDate)
-                return BadRequest(new { message = "Krajnji datum ne može biti prije početnog." });
+                return BadRequest(new { message = "End date cannot be before start date." });
             if (dto.Budget < 0)
-                return BadRequest(new { message = "Budžet ne može biti negativan." });
+                return BadRequest(new { message = "Budget cannot be negative." });
 
-            // Korisnik može kreirati plan samo za sebe
             if (!IsAdmin() && dto.UserId != GetCurrentUserId())
                 return Forbid();
 
-            var plan = await GetTravelProxy().CreateTravelPlanAsync(dto);
-            return Ok(plan);
+            try
+            {
+                var plan = await GetTravelProxy().CreateTravelPlanAsync(dto);
+                return Ok(plan);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdatePlan(int id, [FromBody] UpdateTravelPlanDto dto)
         {
             if (dto.EndDate < dto.StartDate)
-                return BadRequest(new { message = "Krajnji datum ne može biti prije početnog." });
+                return BadRequest(new { message = "End date cannot be before start date." });
             if (dto.Budget < 0)
-                return BadRequest(new { message = "Budžet ne može biti negativan." });
+                return BadRequest(new { message = "Budget cannot be negative." });
 
             var existing = await GetTravelProxy().GetTravelPlanAsync(id);
             if (existing == null)
-                return NotFound(new { message = "Plan nije pronađen." });
+                return NotFound(new { message = "Travel plan not found." });
             if (!IsAdmin() && existing.UserId != GetCurrentUserId())
                 return Forbid();
 
-            var plan = await GetTravelProxy().UpdateTravelPlanAsync(id, dto);
-            return Ok(plan);
+            try
+            {
+                var plan = await GetTravelProxy().UpdateTravelPlanAsync(id, dto);
+                return Ok(plan);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         [HttpDelete("{id}")]
@@ -97,7 +110,7 @@ namespace ApiGateway.Controllers
         {
             var existing = await GetTravelProxy().GetTravelPlanAsync(id);
             if (existing == null)
-                return NotFound(new { message = "Plan nije pronađen." });
+                return NotFound(new { message = "Travel plan not found." });
             if (!IsAdmin() && existing.UserId != GetCurrentUserId())
                 return Forbid();
 
@@ -105,7 +118,7 @@ namespace ApiGateway.Controllers
             await GetChecklistProxy().DeletePlanItemsAsync(id);
             await GetTravelProxy().DeleteTravelPlanAsync(id);
 
-            return Ok(new { message = "Plan i svi povezani podaci su uspješno obrisani." });
+            return Ok(new { message = "Travel plan and all related data were deleted successfully." });
         }
     }
 }

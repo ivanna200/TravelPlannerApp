@@ -3,17 +3,17 @@ import { ChevronLeft, ChevronRight, Clock, MapPin } from 'lucide-react';
 import { formatDateLong } from '../utils/formatDate';
 
 const STATUS_STYLE = {
-  'Planirano':   'border-l-sky-400 bg-sky-50/50',
-  'Rezervisano': 'border-l-violet-400 bg-violet-50/50',
-  'Završeno':    'border-l-emerald-400 bg-emerald-50/50',
-  'Otkazano':    'border-l-rose-400 bg-rose-50/50',
+  'Planned':   'border-l-sky-400 bg-sky-50/50',
+  'Reserved':  'border-l-violet-400 bg-violet-50/50',
+  'Completed': 'border-l-emerald-400 bg-emerald-50/50',
+  'Cancelled': 'border-l-rose-400 bg-rose-50/50',
 };
 
 const STATUS_BADGE = {
-  'Planirano':   'badge-sky',
-  'Rezervisano': 'badge-violet',
-  'Završeno':    'badge-success',
-  'Otkazano':    'badge-danger',
+  'Planned':   'badge-sky',
+  'Reserved':  'badge-violet',
+  'Completed': 'badge-success',
+  'Cancelled': 'badge-danger',
 };
 
 const CalendarView = ({ activities, startDate, endDate }) => {
@@ -41,7 +41,6 @@ const CalendarView = ({ activities, startDate, endDate }) => {
 
   return (
     <div className="space-y-4">
-      {/* Strip navigacije po danima */}
       <div className="card-sm">
         <div className="flex items-center gap-2 mb-3">
           <button
@@ -64,7 +63,7 @@ const CalendarView = ({ activities, startDate, endDate }) => {
                     ${isSel ? 'bg-primary-500 text-white shadow-card' : 'hover:bg-slate-100'}`}
                 >
                   <span className={`text-xs font-medium ${isSel ? 'text-white/70' : 'text-slate-400'}`}>
-                    {day.toLocaleDateString('bs-BA', { weekday: 'short' })}
+                    {day.toLocaleDateString('en-US', { weekday: 'short' })}
                   </span>
                   <span className={`text-sm font-bold mt-0.5 ${isSel ? 'text-white' : 'text-slate-800'}`}>
                     {day.getDate()}
@@ -89,13 +88,12 @@ const CalendarView = ({ activities, startDate, endDate }) => {
         </p>
       </div>
 
-      {/* Aktivnosti za odabrani dan */}
       <div className="space-y-2">
         {selectedActs.length === 0 ? (
           <div className="card">
             <div className="empty-state py-8">
               <div className="text-3xl mb-2">📅</div>
-              <p className="text-slate-400 text-sm">Nema aktivnosti za ovaj dan</p>
+              <p className="text-slate-400 text-sm">No activities for this day</p>
             </div>
           </div>
         ) : (

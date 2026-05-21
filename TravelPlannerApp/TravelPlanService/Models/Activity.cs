@@ -9,7 +9,7 @@
         public string Location { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
         public decimal EstimatedCost { get; set; }
-        public string Status { get; set; } = "Planirano";
+        public string Status { get; set; } = "Planned";
         public int TravelPlanId { get; set; }
         public TravelPlan TravelPlan { get; set; } = null!;
     }

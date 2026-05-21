@@ -38,7 +38,7 @@ export default function App() {
                   </Routes>
                 </main>
                 <footer className="bg-white border-t border-slate-100 py-4 text-center text-xs text-slate-400 font-medium">
-                  © 2026 TravelPlanner — Planirajte putovanja s lakoćom ✈️
+                  © 2026 TravelPlanner — Plan your trips with ease ✈️
                 </footer>
               </div>
             </ToastProvider>

@@ -10,7 +10,6 @@ const Navbar = () => {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
-  // Svi hookovi MORAJU biti prije bilo kakvog early returna — React Rules of Hooks
   useEffect(() => {
     const handler = (e) => {
       if (ref.current && !ref.current.contains(e.target)) setOpen(false);
@@ -25,7 +24,6 @@ const Navbar = () => {
     setOpen(false);
   };
 
-  // Early return MORA biti NAKON svih hookova
   const isAuthPage = ['/login', '/register'].includes(location.pathname);
   if (isAuthPage) return null;
 
@@ -109,7 +107,7 @@ const Navbar = () => {
                     <button onClick={handleLogout}
                       className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-rose-600 hover:bg-rose-50 transition-colors">
                       <LogOut className="w-4 h-4" />
-                      Odjava
+                      Sign out
                     </button>
                   </div>
                 </div>

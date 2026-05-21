@@ -108,3 +108,8 @@ $RECYCLE.BIN/
 # ========================
 *.log
 logs/
+
+# ========================
+# Local course materials (optional)
+# ========================
+*.pptx

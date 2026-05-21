@@ -1,16 +1,15 @@
-import { Activity, Clock, MapPin, Pencil, Trash2, Plus, Calendar, List, AlertCircle, Map } from 'lucide-react';
+import { Activity, Clock, MapPin, Pencil, Trash2, Plus, Calendar, List, AlertCircle } from 'lucide-react';
 import Modal        from '../Modal';
 import ConfirmModal from '../ConfirmModal';
 import CalendarView from '../CalendarView';
-import RouteMapView from '../RouteMapView';
 import { formatDate } from '../../utils/formatDate';
 import { ACTIVITY_STATUSES } from '../../models/Activity';
 
 const STATUS_BADGE = {
-  'Planirano':   'badge-sky',
-  'Rezervisano': 'badge-violet',
-  'Završeno':    'badge-success',
-  'Otkazano':    'badge-danger',
+  'Planned':   'badge-sky',
+  'Reserved':  'badge-violet',
+  'Completed': 'badge-success',
+  'Cancelled': 'badge-danger',
 };
 
 const ActivitiesTab = ({ hook, plan, planStart, planEnd, dateRangeLabel }) => {
@@ -31,43 +30,43 @@ const ActivitiesTab = ({ hook, plan, planStart, planEnd, dateRangeLabel }) => {
   }, {});
 
   const spinBtn = (label) => loading
-    ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Čuvanje...</>
+    ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Saving...</>
     : label;
 
   const formFields = (
     <>
       <div className="alert-info text-xs">
         <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-        Datum mora biti unutar perioda putovanja: {dateRangeLabel}
+        Date must be within the travel period: {dateRangeLabel}
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="label">Naziv *</label>
+          <label className="label">Name *</label>
           <input className="input" value={form.name}
             onChange={e => setForm({ ...form, name: e.target.value })}
-            placeholder="npr. Eiffelov toranj" required />
+            placeholder="e.g. Eiffel Tower" required />
         </div>
         <div>
-          <label className="label">Lokacija</label>
+          <label className="label">Location</label>
           <input className="input" value={form.location}
             onChange={e => setForm({ ...form, location: e.target.value })}
-            placeholder="npr. Pariz, Francuska" />
+            placeholder="e.g. Paris, France" />
         </div>
       </div>
       <div className="grid grid-cols-3 gap-3">
         <div>
-          <label className="label">Datum *</label>
+          <label className="label">Date *</label>
           <input type="date" className="input" value={form.date}
             min={planStart} max={planEnd}
             onChange={e => setForm({ ...form, date: e.target.value })} required />
         </div>
         <div>
-          <label className="label">Vrijeme</label>
+          <label className="label">Time</label>
           <input type="time" className="input" value={form.time}
             onChange={e => setForm({ ...form, time: e.target.value })} />
         </div>
         <div>
-          <label className="label">Trošak (€)</label>
+          <label className="label">Cost (€)</label>
           <input type="number" min="0" step="0.01" className="input" value={form.estimatedCost}
             onChange={e => setForm({ ...form, estimatedCost: e.target.value })} />
         </div>
@@ -81,43 +80,42 @@ const ActivitiesTab = ({ hook, plan, planStart, planEnd, dateRangeLabel }) => {
           </select>
         </div>
         <div>
-          <label className="label">Opis</label>
+          <label className="label">Description</label>
           <input className="input" value={form.description}
             onChange={e => setForm({ ...form, description: e.target.value })}
-            placeholder="Kratki opis..." />
+            placeholder="Short description..." />
         </div>
       </div>
     </>
   );
 
   const VIEWS = [
-    ['list',     List,     'Lista'   ],
-    ['calendar', Calendar, 'Kalendar'],
-    ['map',      Map,      'Mapa'    ],  
+    ['list',     List,     'List'    ],
+    ['calendar', Calendar, 'Calendar'],
   ];
 
   return (
     <>
       {confirmModal && (
         <ConfirmModal
-          title="Obrisati aktivnost?"
-          message={`Obrisati "${confirmModal.name}"? Ova akcija se ne može poništiti.`}
+          title="Delete activity?"
+          message={`Delete "${confirmModal.name}"? This action cannot be undone.`}
           onConfirm={handleDeleteConfirmed}
           onClose={() => setConfirmModal(null)}
         />
       )}
       {(modal === 'add' || modal === 'edit') && (
         <Modal
-          title={modal === 'add' ? 'Nova aktivnost' : 'Uredi aktivnost'}
+          title={modal === 'add' ? 'New activity' : 'Edit activity'}
           onClose={closeModal}
         >
           <form onSubmit={handleSubmit} className="space-y-4">
             {formFields}
             {error && <div className="alert-error text-xs"><AlertCircle className="w-3.5 h-3.5 shrink-0" />{error}</div>}
             <div className="flex gap-3 pt-2">
-              <button type="button" onClick={closeModal} className="btn-outline flex-1">Odustani</button>
+              <button type="button" onClick={closeModal} className="btn-outline flex-1">Cancel</button>
               <button type="submit" className="btn-primary flex-1" disabled={loading}>
-                {spinBtn(modal === 'add' ? 'Sačuvaj aktivnost' : 'Ažuriraj aktivnost')}
+                {spinBtn(modal === 'add' ? 'Save activity' : 'Update activity')}
               </button>
             </div>
           </form>
@@ -128,7 +126,7 @@ const ActivitiesTab = ({ hook, plan, planStart, planEnd, dateRangeLabel }) => {
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <h2 className="section-title">
             <Activity className="w-5 h-5 text-primary-500" />
-            Aktivnosti ({activities.length})
+            Activities ({activities.length})
           </h2>
           <div className="flex gap-2">
             <div className="flex bg-slate-100 rounded-xl p-1 gap-1">
@@ -141,37 +139,22 @@ const ActivitiesTab = ({ hook, plan, planStart, planEnd, dateRangeLabel }) => {
               ))}
             </div>
             <button onClick={openAdd} className="btn-sky">
-              <Plus className="w-4 h-4" />Dodaj
+              <Plus className="w-4 h-4" />Add
             </button>
           </div>
         </div>
 
-        {/* Kalendarski prikaz */}
         {actView === 'calendar' && (
           <CalendarView activities={activities} startDate={plan.startDate} endDate={plan.endDate} />
         )}
 
-        {/*  Prikaz rute na mapi — nadogradnja po specifikaciji */}
-        {actView === 'map' && (
-          <div className="space-y-3">
-            <div className="card-sm bg-sky-50 border-sky-100">
-              <p className="text-xs text-sky-700">
-                <strong>Ruta kretanja</strong> — Prikazuju se aktivnosti s unesenom lokacijom.
-                Unesite puni naziv lokacije (npr. "Eiffelov toranj, Pariz") za precizno pozicioniranje na mapi.
-              </p>
-            </div>
-            <RouteMapView activities={activities} selectedDate={null} />
-          </div>
-        )}
-
-        {/* Lista prikaz */}
         {actView === 'list' && (
           <div className="space-y-4">
             {activities.length === 0 && (
               <div className="card">
                 <div className="empty-state">
                   <Activity className="w-12 h-12 text-slate-200 mb-3" />
-                  <p className="text-slate-400 text-sm">Nema aktivnosti. Dodajte prvu aktivnost klikom na dugme gore.</p>
+                  <p className="text-slate-400 text-sm">No activities. Add your first activity using the button above.</p>
                 </div>
               </div>
             )}

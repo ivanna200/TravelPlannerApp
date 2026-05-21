@@ -34,7 +34,7 @@ export const AuthProvider = ({ children }) => {
       if (result.success) setUser(result.user);
       return result;
     } catch (err) {
-      return { success: false, message: err.response?.data?.message || 'Greška pri prijavi.' };
+      return { success: false, message: err.response?.data?.message || 'Login failed.' };
     }
   }, []);
 
@@ -44,7 +44,7 @@ export const AuthProvider = ({ children }) => {
       if (result.success) setUser(result.user);
       return result;
     } catch (err) {
-      return { success: false, message: err.response?.data?.message || 'Greška pri registraciji.' };
+      return { success: false, message: err.response?.data?.message || 'Registration failed.' };
     }
   }, []);
 

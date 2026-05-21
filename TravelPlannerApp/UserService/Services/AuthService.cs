@@ -26,7 +26,7 @@ namespace UserService.Services
                 .FirstOrDefaultAsync(u => u.Email == dto.Email);
 
             if (existingUser != null)
-                return new AuthResultDto { Success = false, Message = "Korisnik sa ovim emailom vec postoji." };
+                return new AuthResultDto { Success = false, Message = "A user with this email already exists." };
 
             var user = new User
             {
@@ -46,7 +46,7 @@ namespace UserService.Services
             return new AuthResultDto
             {
                 Success = true,
-                Message = "Registracija uspjesna.",
+                Message = "Registration successful.",
                 User = new UserDto
                 {
                     Id = user.Id,
@@ -65,14 +65,14 @@ namespace UserService.Services
                 .FirstOrDefaultAsync(u => u.Email == dto.Email);
 
             if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
-                return new AuthResultDto { Success = false, Message = "Pogresni kredencijali." };
+                return new AuthResultDto { Success = false, Message = "Invalid credentials." };
 
             var token = GenerateJwtToken(user);
 
             return new AuthResultDto
             {
                 Success = true,
-                Message = "Prijava uspjesna.",
+                Message = "Login successful.",
                 User = new UserDto
                 {
                     Id = user.Id,
@@ -146,7 +146,7 @@ namespace UserService.Services
         private string GenerateJwtToken(User user)
         {
             var jwtSettings = _configuration.GetSection("JwtSettings");
-            var secret = jwtSettings["Secret"] ?? throw new InvalidOperationException("JWT Secret nije konfigurisan.");
+            var secret = jwtSettings["Secret"] ?? throw new InvalidOperationException("JWT Secret is not configured.");
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
             var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 

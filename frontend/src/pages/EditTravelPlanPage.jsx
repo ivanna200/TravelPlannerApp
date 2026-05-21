@@ -17,7 +17,6 @@ const EditTravelPlanPage = () => {
 
   const f = (key, val) => setForm(p => ({ ...p, [key]: val }));
 
-  // useCallback daje stabilnu referencu, sprječava beskonačnu petlju u useEffect
   const populateForm = useCallback((plan) => {
     setForm({
       name:        plan.name,
@@ -33,7 +32,7 @@ const EditTravelPlanPage = () => {
     if (currentPlan && String(currentPlan.id) === String(id)) {
       populateForm(currentPlan);
     } else {
-      fetchPlan(id).catch(() => setError('Greška pri učitavanju plana.'));
+      fetchPlan(id).catch(() => setError('Error loading plan.'));
     }
   }, [id, currentPlan, fetchPlan, populateForm]);
 
@@ -41,20 +40,20 @@ const EditTravelPlanPage = () => {
     e.preventDefault();
     setError('');
 
-    if (!form.name.trim()) { setError('Naziv putovanja je obavezan.'); return; }
-    if (form.name.length > 200) { setError('Naziv putovanja ne može biti duži od 200 karaktera.'); return; }
+    if (!form.name.trim()) { setError('Trip name is required.'); return; }
+    if (form.name.length > 200) { setError('Trip name cannot exceed 200 characters.'); return; }
     if (new Date(form.endDate) < new Date(form.startDate)) {
-      setError('Krajnji datum ne može biti prije početnog.'); return;
+      setError('End date cannot be before the start date.'); return;
     }
-    if (parseFloat(form.budget) < 0) { setError('Budžet ne može biti negativan.'); return; }
+    if (parseFloat(form.budget) < 0) { setError('Budget cannot be negative.'); return; }
 
     setLoading(true);
     try {
       await updatePlan(id, { ...form, budget: parseFloat(form.budget) });
-      showToast('Plan putovanja uspješno ažuriran!');
+      showToast('Travel plan updated successfully!');
       navigate(`/plan/${id}`);
     } catch {
-      setError('Greška pri ažuriranju.');
+      setError('Error updating plan.');
     } finally {
       setLoading(false);
     }
@@ -66,7 +65,7 @@ const EditTravelPlanPage = () => {
     <div className="max-w-2xl mx-auto px-4 py-8">
       <Link to={`/plan/${id}`} className="inline-flex items-center gap-1.5 text-slate-500 hover:text-sky-600 text-sm mb-6 transition-colors group">
         <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
-        Nazad na plan
+        Back to plan
       </Link>
 
       <div className="card">
@@ -75,8 +74,8 @@ const EditTravelPlanPage = () => {
             <Pencil className="w-5 h-5 text-amber-500" />
           </div>
           <div>
-            <h1 className="text-slate-900 text-xl">Uredi putovanje</h1>
-            <p className="text-slate-500 text-sm">Izmijeni podatke o putovanju</p>
+            <h1 className="text-slate-900 text-xl">Edit trip</h1>
+            <p className="text-slate-500 text-sm">Update trip details</p>
           </div>
         </div>
 
@@ -89,7 +88,7 @@ const EditTravelPlanPage = () => {
         {form && (
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="label">Naziv *</label>
+              <label className="label">Name *</label>
               <input
                 className="input"
                 value={form.name}
@@ -97,7 +96,6 @@ const EditTravelPlanPage = () => {
                 maxLength={200}
                 required
               />
-              {/* Brojač karaktera — pojavljuje se kad korisnik počne kucati */}
               {form.name.length > 0 && (
                 <p className={`text-xs mt-1 text-right ${form.name.length > 180 ? 'text-rose-500' : 'text-slate-400'}`}>
                   {form.name.length}/200
@@ -105,36 +103,36 @@ const EditTravelPlanPage = () => {
               )}
             </div>
             <div>
-              <label className="label">Opis</label>
+              <label className="label">Description</label>
               <textarea className="input resize-none" value={form.description} onChange={e => f('description', e.target.value)} rows={3} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="label">Početni datum *</label>
+                <label className="label">Start date *</label>
                 <input type="date" className="input" value={form.startDate} onChange={e => f('startDate', e.target.value)} required />
               </div>
               <div>
-                <label className="label">Krajnji datum *</label>
+                <label className="label">End date *</label>
                 <input type="date" className="input" value={form.endDate} min={form.startDate} onChange={e => f('endDate', e.target.value)} required />
               </div>
             </div>
             <div>
-              <label className="label">Budžet (€)</label>
+              <label className="label">Budget (€)</label>
               <div className="relative">
                 <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-semibold">€</span>
                 <input type="number" min="0" step="0.01" className="input pl-8" value={form.budget} onChange={e => f('budget', e.target.value)} />
               </div>
             </div>
             <div>
-              <label className="label">Napomene</label>
+              <label className="label">Notes</label>
               <textarea className="input resize-none" value={form.notes} onChange={e => f('notes', e.target.value)} rows={3} />
             </div>
             <div className="flex gap-3 pt-2 border-t border-slate-100">
-              <button type="button" onClick={() => navigate(`/plan/${id}`)} className="btn-outline flex-1">Odustani</button>
+              <button type="button" onClick={() => navigate(`/plan/${id}`)} className="btn-outline flex-1">Cancel</button>
               <button type="submit" className="btn-primary flex-1" disabled={loading}>
                 {loading
-                  ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Čuvanje...</>
-                  : '✅ Sačuvaj izmjene'}
+                  ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Saving...</>
+                  : '✅ Save changes'}
               </button>
             </div>
           </form>

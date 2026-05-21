@@ -22,9 +22,9 @@ export const usePlanDestinations = (planId, planStart, planEnd) => {
 
   const validate = (f) => {
     if (!isDateInPlan(f.arrivalDate) || !isDateInPlan(f.departureDate))
-      return 'Datumi destinacije moraju biti unutar perioda putovanja!';
+      return 'Destination dates must be within the travel period!';
     if (f.departureDate && f.arrivalDate && f.departureDate < f.arrivalDate)
-      return 'Datum odlaska ne može biti prije datuma dolaska!';
+      return 'Departure date cannot be before arrival date!';
     return null;
   };
 
@@ -53,14 +53,14 @@ export const usePlanDestinations = (planId, planStart, planEnd) => {
     try {
       if (modal === 'add') {
         await addDestination({ ...form, travelPlanId: parseInt(planId) });
-        showToast('Destinacija uspješno dodana!');
+        showToast('Destination added successfully!');
       } else {
         await updateDestination(editTarget.id, { ...form, travelPlanId: parseInt(planId) });
-        showToast('Destinacija uspješno ažurirana!');
+        showToast('Destination updated successfully!');
       }
       closeModal();
     } catch {
-      setError(modal === 'add' ? 'Greška pri dodavanju destinacije.' : 'Greška pri ažuriranju destinacije.');
+      setError(modal === 'add' ? 'Error adding destination.' : 'Error updating destination.');
     } finally {
       setLoading(false);
     }
@@ -71,9 +71,9 @@ export const usePlanDestinations = (planId, planStart, planEnd) => {
     if (!confirmModal) return;
     try {
       await removeDestination(confirmModal.id);
-      showToast('Destinacija uspješno obrisana.');
+      showToast('Destination deleted successfully.');
     } catch {
-      showToast('Greška pri brisanju destinacije.', 'error');
+      showToast('Error deleting destination.', 'error');
     } finally {
       setConfirmModal(null);
     }

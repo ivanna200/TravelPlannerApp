@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useTravelPlan } from '../useTravelPlan';
 import { useToast }      from '../useToast';
 
-const emptyForm = { name: '', category: 'Prevoz', amount: '', date: '', description: '' };
+const emptyForm = { name: '', category: 'Transport', amount: '', date: '', description: '' };
 
 export const usePlanExpenses = (planId, planBudget, planStart, planEnd) => {
   const { expenses, budgetSummary, addExpense, updateExpense, removeExpense } = useTravelPlan();
@@ -25,7 +25,7 @@ export const usePlanExpenses = (planId, planBudget, planStart, planEnd) => {
   const openEdit = (exp) => {
     setForm({
       name:        exp.name,
-      category:    exp.category    || 'Prevoz',
+      category:    exp.category    || 'Transport',
       amount:      exp.amount      || '',
       date:        exp.date?.split('T')[0] || '',
       description: exp.description || '',
@@ -40,21 +40,21 @@ export const usePlanExpenses = (planId, planBudget, planStart, planEnd) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (form.date && !isDateInPlan(form.date)) {
-      setError('Datum troška mora biti unutar perioda putovanja!'); return;
+      setError('Expense date must be within the travel period!'); return;
     }
     setLoading(true);
     try {
       const payload = { ...form, travelPlanId: parseInt(planId), amount: parseFloat(form.amount) };
       if (modal === 'add') {
         await addExpense(payload, planBudget);
-        showToast('Trošak uspješno dodan!');
+        showToast('Expense added successfully!');
       } else {
         await updateExpense(editTarget.id, payload, parseInt(planId), planBudget);
-        showToast('Trošak uspješno ažuriran!');
+        showToast('Expense updated successfully!');
       }
       closeModal();
     } catch {
-      setError(modal === 'add' ? 'Greška pri dodavanju troška.' : 'Greška pri ažuriranju troška.');
+      setError(modal === 'add' ? 'Error adding expense.' : 'Error updating expense.');
     } finally {
       setLoading(false);
     }
@@ -65,9 +65,9 @@ export const usePlanExpenses = (planId, planBudget, planStart, planEnd) => {
     if (!confirmModal) return;
     try {
       await removeExpense(confirmModal.id, parseInt(planId), planBudget);
-      showToast('Trošak uspješno obrisan.');
+      showToast('Expense deleted successfully.');
     } catch {
-      showToast('Greška pri brisanju troška.', 'error');
+      showToast('Error deleting expense.', 'error');
     } finally {
       setConfirmModal(null);
     }

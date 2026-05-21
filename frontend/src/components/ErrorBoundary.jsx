@@ -30,10 +30,10 @@ class ErrorBoundary extends Component {
             <AlertTriangle className="w-8 h-8 text-rose-400" />
           </div>
           <h2 className="text-xl font-bold text-slate-800 mb-2">
-            Došlo je do neočekivane greške
+            An unexpected error occurred
           </h2>
           <p className="text-slate-500 text-sm mb-2">
-            Nešto nije u redu. Pokušajte ponovo ili se vratite na dashboard.
+            Something went wrong. Please try again or return to the dashboard.
           </p>
           {this.state.error && (
             <p className="text-xs text-slate-400 font-mono bg-slate-100 rounded-lg p-2 mb-6 text-left break-all">
@@ -41,7 +41,7 @@ class ErrorBoundary extends Component {
             </p>
           )}
           <button onClick={this.handleReset} className="btn-primary mx-auto">
-            <RefreshCw className="w-4 h-4" />Vrati se na dashboard
+            <RefreshCw className="w-4 h-4" />Back to dashboard
           </button>
         </div>
       </div>

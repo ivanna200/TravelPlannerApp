@@ -1,23 +1,23 @@
 import { sharedApi } from './axiosConfig';
 
 const sharedPlanService = {
-  addDestination: async (data) => {
-    const response = await sharedApi.post('/api/destinations', data);
+  addDestination: async (shareToken, data) => {
+    const response = await sharedApi.post(`/api/sharing/${shareToken}/destinations`, data);
     return response.data;
   },
 
-  deleteDestination: async (id) => {
-    const response = await sharedApi.delete(`/api/destinations/${id}`);
+  deleteDestination: async (shareToken, id) => {
+    const response = await sharedApi.delete(`/api/sharing/${shareToken}/destinations/${id}`);
     return response.data;
   },
 
-  addActivity: async (data) => {
-    const response = await sharedApi.post('/api/activities', data);
+  addActivity: async (shareToken, data) => {
+    const response = await sharedApi.post(`/api/sharing/${shareToken}/activities`, data);
     return response.data;
   },
 
-  deleteActivity: async (id) => {
-    const response = await sharedApi.delete(`/api/activities/${id}`);
+  deleteActivity: async (shareToken, id) => {
+    const response = await sharedApi.delete(`/api/sharing/${shareToken}/activities/${id}`);
     return response.data;
   },
 };

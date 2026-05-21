@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using TravelPlanner.Shared.Constants;
 using TravelPlanner.Shared.DTOs;
 using TravelPlanService.Data;
 using TravelPlanService.Models;
@@ -41,9 +42,9 @@ namespace TravelPlanService.Services
         public async Task<TravelPlanDto> CreateTravelPlanAsync(CreateTravelPlanDto dto)
         {
             if (dto.EndDate < dto.StartDate)
-                throw new ArgumentException("Krajnji datum ne moze biti prije pocetnog datuma.");
+                throw new ArgumentException("End date cannot be before start date.");
             if (dto.Budget < 0)
-                throw new ArgumentException("Budzet ne moze biti negativan.");
+                throw new ArgumentException("Budget cannot be negative.");
 
             var plan = new TravelPlan
             {
@@ -71,9 +72,9 @@ namespace TravelPlanService.Services
 
             if (plan == null) return null;
             if (dto.EndDate < dto.StartDate)
-                throw new ArgumentException("Krajnji datum ne moze biti prije pocetnog datuma.");
+                throw new ArgumentException("End date cannot be before start date.");
             if (dto.Budget < 0)
-                throw new ArgumentException("Budzet ne moze biti negativan.");
+                throw new ArgumentException("Budget cannot be negative.");
 
             plan.Name = dto.Name;
             plan.Description = dto.Description;
@@ -122,6 +123,9 @@ namespace TravelPlanService.Services
 
         public async Task<DestinationDto> CreateDestinationAsync(CreateDestinationDto dto)
         {
+            var plan = await RequirePlanAsync(dto.TravelPlanId);
+            ValidateDestinationDates(plan, dto.ArrivalDate, dto.DepartureDate);
+
             var destination = new Destination
             {
                 Name = dto.Name,
@@ -140,6 +144,10 @@ namespace TravelPlanService.Services
         {
             var destination = await _context.Destinations.FindAsync(id);
             if (destination == null) return null;
+
+            var plan = await RequirePlanAsync(destination.TravelPlanId);
+            ValidateDestinationDates(plan, dto.ArrivalDate, dto.DepartureDate);
+
             destination.Name = dto.Name;
             destination.Location = dto.Location;
             destination.ArrivalDate = dto.ArrivalDate;
@@ -184,6 +192,12 @@ namespace TravelPlanService.Services
 
         public async Task<ActivityDto> CreateActivityAsync(CreateActivityDto dto)
         {
+            var plan = await RequirePlanAsync(dto.TravelPlanId);
+            ValidateActivityDate(plan, dto.Date);
+
+            if (!ActivityStatuses.All.Contains(dto.Status))
+                throw new ArgumentException($"Invalid status. Allowed: {string.Join(", ", ActivityStatuses.All)}");
+
             var activity = new Activity
             {
                 Name = dto.Name,
@@ -204,6 +218,13 @@ namespace TravelPlanService.Services
         {
             var activity = await _context.Activities.FindAsync(id);
             if (activity == null) return null;
+
+            var plan = await RequirePlanAsync(activity.TravelPlanId);
+            ValidateActivityDate(plan, dto.Date);
+
+            if (!ActivityStatuses.All.Contains(dto.Status))
+                throw new ArgumentException($"Invalid status. Allowed: {string.Join(", ", ActivityStatuses.All)}");
+
             activity.Name = dto.Name;
             activity.Date = dto.Date;
             activity.Time = dto.Time;
@@ -269,6 +290,22 @@ namespace TravelPlanService.Services
             }).ToList();
         }
 
+        public async Task<SharePlanDto?> GetShareTokenByIdAsync(int id)
+        {
+            var shareToken = await _context.ShareTokens.FindAsync(id);
+            if (shareToken == null) return null;
+
+            return new SharePlanDto
+            {
+                Id = shareToken.Id,
+                Token = shareToken.Token,
+                AccessType = shareToken.AccessType,
+                TravelPlanId = shareToken.TravelPlanId,
+                ExpiresAt = shareToken.ExpiresAt,
+                ShareUrl = $"{GetFrontendUrl()}/shared/{shareToken.Token}"
+            };
+        }
+
         public async Task<bool> DeleteShareTokenAsync(int id)
         {
             var shareToken = await _context.ShareTokens.FindAsync(id);
@@ -284,18 +321,40 @@ namespace TravelPlanService.Services
                 .FirstOrDefaultAsync(s => s.Token == token);
 
             if (shareToken == null)
-                return new ShareTokenValidationDto { IsValid = false, Message = "Token nije pronađen." };
+                return new ShareTokenValidationDto { IsValid = false, Message = "Token not found." };
 
             if (shareToken.ExpiresAt < DateTime.UtcNow)
-                return new ShareTokenValidationDto { IsValid = false, Message = "Token je istekao." };
+                return new ShareTokenValidationDto { IsValid = false, Message = "Token has expired." };
 
             return new ShareTokenValidationDto
             {
                 IsValid = true,
                 AccessType = shareToken.AccessType,
                 TravelPlanId = shareToken.TravelPlanId,
-                Message = "Token je validan."
+                Message = "Token is valid."
             };
+        }
+
+        private async Task<TravelPlan> RequirePlanAsync(int travelPlanId)
+        {
+            var plan = await _context.TravelPlans.FindAsync(travelPlanId);
+            if (plan == null)
+                throw new ArgumentException("Travel plan not found.");
+            return plan;
+        }
+
+        private static void ValidateDestinationDates(TravelPlan plan, DateTime arrival, DateTime departure)
+        {
+            if (departure < arrival)
+                throw new ArgumentException("Departure date cannot be before arrival date.");
+            if (arrival.Date < plan.StartDate.Date || departure.Date > plan.EndDate.Date)
+                throw new ArgumentException("Destination dates must be within the travel plan period.");
+        }
+
+        private static void ValidateActivityDate(TravelPlan plan, DateTime date)
+        {
+            if (date.Date < plan.StartDate.Date || date.Date > plan.EndDate.Date)
+                throw new ArgumentException("Activity date must be within the travel plan period.");
         }
 
         public async Task<TravelPlanDto?> GetPlanByShareTokenAsync(string token)

@@ -124,7 +124,7 @@ export const TravelPlanProvider = ({ children }) => {
       const data = await travelPlanService.getUserPlans(userId);
       dispatch({ type: ACTION.SET_PLANS, payload: data });
     } catch {
-      dispatch({ type: ACTION.SET_ERROR, payload: 'Greška pri učitavanju planova.' });
+      dispatch({ type: ACTION.SET_ERROR, payload: 'Error loading plans.' });
     }
   }, []);
 
@@ -146,7 +146,7 @@ export const TravelPlanProvider = ({ children }) => {
       const summary = await expenseService.getBudgetSummary(id, plan.budget);
       dispatch({ type: ACTION.SET_BUDGET_SUMMARY, payload: summary });
     } catch {
-      dispatch({ type: ACTION.SET_ERROR, payload: 'Greška pri učitavanju plana.' });
+      dispatch({ type: ACTION.SET_ERROR, payload: 'Error loading plan.' });
     }
   }, []);
 

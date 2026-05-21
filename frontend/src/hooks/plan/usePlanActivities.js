@@ -4,7 +4,7 @@ import { useToast }      from '../useToast';
 
 const emptyForm = {
   name: '', date: '', time: '', location: '',
-  description: '', estimatedCost: 0, status: 'Planirano',
+  description: '', estimatedCost: 0, status: 'Planned',
 };
 
 export const usePlanActivities = (planId, planStart, planEnd) => {
@@ -34,7 +34,7 @@ export const usePlanActivities = (planId, planStart, planEnd) => {
       location:      act.location      || '',
       description:   act.description   || '',
       estimatedCost: act.estimatedCost || 0,
-      status:        act.status        || 'Planirano',
+      status:        act.status        || 'Planned',
     });
     setEditTarget(act);
     setError('');
@@ -46,7 +46,7 @@ export const usePlanActivities = (planId, planStart, planEnd) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!isDateInPlan(form.date)) {
-      setError('Datum aktivnosti mora biti unutar perioda putovanja!'); return;
+      setError('Activity date must be within the travel period!'); return;
     }
     setLoading(true);
     try {
@@ -57,14 +57,14 @@ export const usePlanActivities = (planId, planStart, planEnd) => {
       };
       if (modal === 'add') {
         await addActivity(payload);
-        showToast('Aktivnost uspješno dodana!');
+        showToast('Activity added successfully!');
       } else {
         await updateActivity(editTarget.id, payload);
-        showToast('Aktivnost uspješno ažurirana!');
+        showToast('Activity updated successfully!');
       }
       closeModal();
     } catch {
-      setError(modal === 'add' ? 'Greška pri dodavanju aktivnosti.' : 'Greška pri ažuriranju aktivnosti.');
+      setError(modal === 'add' ? 'Error adding activity.' : 'Error updating activity.');
     } finally {
       setLoading(false);
     }
@@ -75,9 +75,9 @@ export const usePlanActivities = (planId, planStart, planEnd) => {
     if (!confirmModal) return;
     try {
       await removeActivity(confirmModal.id);
-      showToast('Aktivnost uspješno obrisana.');
+      showToast('Activity deleted successfully.');
     } catch {
-      showToast('Greška pri brisanju aktivnosti.', 'error');
+      showToast('Error deleting activity.', 'error');
     } finally {
       setConfirmModal(null);
     }

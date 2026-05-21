@@ -32,9 +32,9 @@ const DashboardPage = () => {
   const handleDeleteConfirmed = async (id) => {
     try {
       await deletePlan(id);
-      showToast('Plan putovanja uspješno obrisan.');
+      showToast('Travel plan deleted successfully.');
     } catch {
-      showToast('Greška pri brisanju. Pokušajte ponovo.', 'error');
+      showToast('Error deleting plan. Please try again.', 'error');
     }
   };
 
@@ -46,35 +46,33 @@ const DashboardPage = () => {
   const upcoming = plans.filter(p => new Date(p.startDate) > new Date());
 
   const stats = [
-    { label: 'Ukupno planova', value: plans.length,                    icon: Globe,      color: 'text-primary-500', bg: 'bg-blue-50',    border: 'border-l-primary-500' },
-    { label: 'U toku',         value: active.length,                   icon: TrendingUp, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-l-emerald-500' },
-    { label: 'Predstojeća',    value: upcoming.length,                 icon: Clock,      color: 'text-sky-600',     bg: 'bg-sky-50',     border: 'border-l-sky-500'     },
-    { label: 'Ukupni budžet',  value: `${totalBudget.toLocaleString()} €`, icon: Wallet, color: 'text-violet-600', bg: 'bg-violet-50',  border: 'border-l-violet-500'  },
+    { label: 'Total plans',  value: plans.length,                    icon: Globe,      color: 'text-primary-500', bg: 'bg-blue-50',    border: 'border-l-primary-500' },
+    { label: 'In progress',  value: active.length,                   icon: TrendingUp, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-l-emerald-500' },
+    { label: 'Upcoming',     value: upcoming.length,                 icon: Clock,      color: 'text-sky-600',     bg: 'bg-sky-50',     border: 'border-l-sky-500'     },
+    { label: 'Total budget', value: `${totalBudget.toLocaleString()} €`, icon: Wallet, color: 'text-violet-600', bg: 'bg-violet-50',  border: 'border-l-violet-500'  },
   ];
 
   return (
     <div className="page-container">
 
-      {/* ── ConfirmModal za brisanje plana ── */}
       {confirmModal && (
         <ConfirmModal
-          title="Obrisati plan putovanja?"
-          message={`Obrisati "${confirmModal.name}"? Brisat će se i sve destinacije, aktivnosti, troškovi i checklist stavke. Ova akcija se ne može poništiti.`}
+          title="Delete travel plan?"
+          message={`Delete "${confirmModal.name}"? All destinations, activities, expenses, and checklist items will also be removed. This action cannot be undone.`}
           onConfirm={() => handleDeleteConfirmed(confirmModal.id)}
           onClose={() => setConfirmModal(null)}
         />
       )}
 
-      {/* ── Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="text-slate-900">
-            Dobrodošli, <span className="text-sky-600">{user.firstName}</span> 👋
+            Welcome, <span className="text-sky-600">{user.firstName}</span> 👋
           </h1>
-          <p className="text-slate-500 mt-1 text-sm">Upravljajte svim planovima putovanja</p>
+          <p className="text-slate-500 mt-1 text-sm">Manage all your travel plans</p>
         </div>
         <button onClick={() => navigate('/create-plan')} className="btn-sky self-start">
-          <Plus className="w-4 h-4" /> Novo putovanje
+          <Plus className="w-4 h-4" /> New trip
         </button>
       </div>
 
@@ -84,7 +82,6 @@ const DashboardPage = () => {
         </div>
       )}
 
-      {/* ── Stats ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {stats.map(s => (
           <div key={s.label} className={`card-colored-left ${s.border}`}>
@@ -97,10 +94,9 @@ const DashboardPage = () => {
         ))}
       </div>
 
-      {/* ── Plans header ── */}
       <div className="flex items-center justify-between mb-5">
-        <h2 className="text-slate-800">Moja putovanja</h2>
-        {plans.length > 0 && <span className="badge-neutral">{plans.length} planova</span>}
+        <h2 className="text-slate-800">My trips</h2>
+        {plans.length > 0 && <span className="badge-neutral">{plans.length} plans</span>}
       </div>
 
       {loading && plans.length === 0 && <SkeletonGrid count={3} />}
@@ -111,18 +107,17 @@ const DashboardPage = () => {
             <div className="w-20 h-20 bg-sky-50 rounded-3xl flex items-center justify-center mb-5">
               <Globe className="w-10 h-10 text-sky-400" />
             </div>
-            <h3 className="text-lg font-bold text-slate-800 mb-2">Nema planova putovanja</h3>
+            <h3 className="text-lg font-bold text-slate-800 mb-2">No travel plans yet</h3>
             <p className="text-slate-500 text-sm mb-6 max-w-xs">
-              Kreirajte prvi plan i počnite planirati svoju avanturu!
+              Create your first plan and start planning your adventure!
             </p>
             <button onClick={() => navigate('/create-plan')} className="btn-sky">
-              <Plus className="w-4 h-4" /> Kreiraj prvi plan
+              <Plus className="w-4 h-4" /> Create first plan
             </button>
           </div>
         </div>
       )}
 
-      {/* ── Plans grid ── */}
       {plans.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
           {plans.map(plan => {
@@ -149,20 +144,20 @@ const DashboardPage = () => {
                   <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                   <span>{formatDateRange(plan.startDate, plan.endDate)}</span>
                   <span className="text-slate-300 text-xs">·</span>
-                  <span className="text-slate-400 text-xs">{duration} dana</span>
+                  <span className="text-slate-400 text-xs">{duration} days</span>
                 </div>
 
                 <div className="flex items-center gap-2 text-sm font-semibold text-emerald-600 mb-4">
                   <Wallet className="w-3.5 h-3.5 shrink-0" />
-                  {plan.budget?.toLocaleString()} € budžet
+                  {plan.budget?.toLocaleString()} € budget
                 </div>
 
                 <div className="flex gap-4 text-xs text-slate-400 pb-4 mb-4 border-b border-slate-100">
                   <span className="flex items-center gap-1">
-                    <MapPin className="w-3 h-3" />{plan.destinations?.length || 0} destinacija
+                    <MapPin className="w-3 h-3" />{plan.destinations?.length || 0} destinations
                   </span>
                   <span className="flex items-center gap-1">
-                    <Activity className="w-3 h-3" />{plan.activities?.length || 0} aktivnosti
+                    <Activity className="w-3 h-3" />{plan.activities?.length || 0} activities
                   </span>
                 </div>
 
@@ -171,7 +166,7 @@ const DashboardPage = () => {
                     to={`/plan/${plan.id}`}
                     className="btn-primary flex-1 text-sm py-2 flex items-center justify-center gap-1.5"
                   >
-                    <Eye className="w-3.5 h-3.5" /> Pregledaj
+                    <Eye className="w-3.5 h-3.5" /> View
                   </Link>
                   <Link
                     to={`/edit-plan/${plan.id}`}

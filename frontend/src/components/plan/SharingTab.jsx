@@ -11,24 +11,24 @@ const SharingTab = ({ hook }) => {
   return (
     <div className="space-y-5">
       <h2 className="section-title">
-        <Share2 className="w-5 h-5 text-primary-500" />Dijeljenje plana
+        <Share2 className="w-5 h-5 text-primary-500" />Share plan
       </h2>
 
       <div className="card">
         <p className="text-sm text-slate-500 mb-5">
-          Generirajte link i QR kod za dijeljenje plana. Dva nivoa pristupa:
-          <strong> VIEW</strong> (samo pregled) i <strong>EDIT</strong> (pregled i uređivanje).
-          Link ističe za 7 dana.
+          Generate a link and QR code to share this plan. Two access levels:
+          <strong> VIEW</strong> (view only) and <strong>EDIT</strong> (view and edit).
+          Links expire after 7 days.
         </p>
         <div className="grid grid-cols-2 gap-4">
           {[
             {
-              type: 'VIEW', icon: Eye, label: 'VIEW pristup', desc: 'Samo pregled',
+              type: 'VIEW', icon: Eye, label: 'VIEW access', desc: 'View only',
               hB: 'hover:border-sky-400', hBg: 'hover:bg-sky-50',
               iB: 'bg-sky-50 group-hover:bg-sky-100', iC: 'text-sky-500', tC: 'text-sky-700',
             },
             {
-              type: 'EDIT', icon: Pencil, label: 'EDIT pristup', desc: 'Pregled i uređivanje',
+              type: 'EDIT', icon: Pencil, label: 'EDIT access', desc: 'View and edit',
               hB: 'hover:border-emerald-400', hBg: 'hover:bg-emerald-50',
               iB: 'bg-emerald-50 group-hover:bg-emerald-100', iC: 'text-emerald-600', tC: 'text-emerald-700',
             },
@@ -47,17 +47,16 @@ const SharingTab = ({ hook }) => {
         </div>
       </div>
 
-      {/* Novokreirani token — prikazuje se odmah nakon generisanja */}
       {shareToken && (
         <div className="card space-y-5 border-2 border-sky-100">
           <div className="flex items-center gap-3">
-            <span className="text-sm font-bold text-slate-700">Novi link</span>
+            <span className="text-sm font-bold text-slate-700">New link</span>
             <span className={`badge ${shareToken.accessType === 'EDIT' ? 'badge-success' : 'badge-sky'}`}>
               {shareToken.accessType === 'EDIT' ? '✏️ EDIT' : '👁️ VIEW'}
             </span>
             <span className="text-sm text-slate-400 flex items-center gap-1">
               <Clock className="w-3.5 h-3.5" />
-              Ističe {formatDateLong(shareToken.expiresAt)}
+              Expires {formatDateLong(shareToken.expiresAt)}
             </span>
           </div>
           <div>
@@ -67,32 +66,31 @@ const SharingTab = ({ hook }) => {
               <button onClick={handleCopy}
                 className={`shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all
                   ${copied ? 'bg-emerald-500 text-white' : 'bg-sky-500 hover:bg-sky-600 text-white'}`}>
-                <Copy className="w-4 h-4" />{copied ? 'Kopirano!' : 'Kopiraj'}
+                <Copy className="w-4 h-4" />{copied ? 'Copied!' : 'Copy'}
               </button>
             </div>
           </div>
           <div className="border-t border-slate-100 pt-5 text-center">
             <div className="flex items-center justify-center gap-2 text-sm font-semibold text-slate-700 mb-4">
-              <QrCode className="w-4 h-4 text-sky-500" />QR kod za dijeljenje
+              <QrCode className="w-4 h-4 text-sky-500" />QR code for sharing
             </div>
             <div className="inline-block p-4 bg-white rounded-2xl border-2 border-slate-100 shadow-card">
               <img
                 src={sharingService.getQrCodeUrl(shareToken.token)}
-                alt="QR kod za dijeljenje plana"
+                alt="QR code for sharing plan"
                 className="w-48 h-48"
               />
             </div>
-            <p className="text-xs text-slate-400 mt-3">Skenirajte telefonom za brzi pristup planu</p>
+            <p className="text-xs text-slate-400 mt-3">Scan with your phone for quick access to the plan</p>
           </div>
         </div>
       )}
 
-      {/* Lista svih aktivnih tokena za ovaj plan */}
       {sharings.length > 0 && (
         <div className="card">
           <h3 className="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2">
             <Clock className="w-4 h-4 text-slate-400" />
-            Aktivni linkovi ({sharings.length})
+            Active links ({sharings.length})
           </h3>
           <div className="space-y-3">
             {sharings.map(s => (
@@ -106,12 +104,12 @@ const SharingTab = ({ hook }) => {
                   readOnly
                 />
                 <span className="text-xs text-slate-400 shrink-0 whitespace-nowrap">
-                  do {formatDateLong(s.expiresAt)}
+                  until {formatDateLong(s.expiresAt)}
                 </span>
                 <button
                   onClick={() => handleDeleteSharing(s.id)}
                   className="btn-danger shrink-0"
-                  title="Opozovi link"
+                  title="Revoke link"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>

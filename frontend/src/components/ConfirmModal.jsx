@@ -34,7 +34,7 @@ const ConfirmModal = ({ title, message, onConfirm, onClose, danger = true }) => 
           <p className="text-slate-600 text-sm leading-relaxed">{message}</p>
           <div className="flex gap-3 mt-5">
             <button onClick={onClose} className="btn-outline flex-1">
-              Odustani
+              Cancel
             </button>
             <button
               onClick={() => { onConfirm(); onClose(); }}
@@ -44,7 +44,7 @@ const ConfirmModal = ({ title, message, onConfirm, onClose, danger = true }) => 
                   : 'bg-amber-500 hover:bg-amber-600 text-white'
               }`}
             >
-              Obriši
+              Delete
             </button>
           </div>
         </div>

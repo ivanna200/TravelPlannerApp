@@ -43,7 +43,7 @@ namespace TravelPlanService.Data
                 entity.HasKey(a => a.Id);
                 entity.Property(a => a.Name).IsRequired().HasMaxLength(200);
                 entity.Property(a => a.EstimatedCost).HasPrecision(18, 2);
-                entity.Property(a => a.Status).HasDefaultValue("Planirano");
+                entity.Property(a => a.Status).HasDefaultValue("Planned");
             });
 
             modelBuilder.Entity<ShareToken>(entity =>

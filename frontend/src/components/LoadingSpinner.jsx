@@ -1,6 +1,6 @@
 import { Plane } from 'lucide-react';
 
-const LoadingSpinner = ({ text = 'Učitavanje...' }) => (
+const LoadingSpinner = ({ text = 'Loading...' }) => (
   <div className="min-h-[50vh] flex flex-col items-center justify-center gap-4">
     <div className="relative">
       <div className="w-14 h-14 border-4 border-slate-200 rounded-full animate-spin border-t-sky-500" />

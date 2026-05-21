@@ -23,15 +23,15 @@ const CreateTravelPlanPage = () => {
     e.preventDefault();
     setError('');
 
-    if (!form.name.trim())    { setError('Naziv putovanja je obavezan.'); return; }
-    if (form.name.length > 200) { setError('Naziv putovanja ne može biti duži od 200 karaktera.'); return; }
-    if (!form.startDate)      { setError('Početni datum je obavezan.'); return; }
-    if (!form.endDate)        { setError('Krajnji datum je obavezan.'); return; }
+    if (!form.name.trim())    { setError('Trip name is required.'); return; }
+    if (form.name.length > 200) { setError('Trip name cannot exceed 200 characters.'); return; }
+    if (!form.startDate)      { setError('Start date is required.'); return; }
+    if (!form.endDate)        { setError('End date is required.'); return; }
     if (new Date(form.endDate) < new Date(form.startDate)) {
-      setError('Krajnji datum ne može biti prije početnog.'); return;
+      setError('End date cannot be before the start date.'); return;
     }
     if (form.budget !== '' && parseFloat(form.budget) < 0) {
-      setError('Budžet ne može biti negativan.'); return;
+      setError('Budget cannot be negative.'); return;
     }
 
     setLoading(true);
@@ -41,10 +41,10 @@ const CreateTravelPlanPage = () => {
         budget: parseFloat(form.budget) || 0,
         userId: user.id,
       });
-      showToast('Plan putovanja uspješno kreiran! ✈️');
+      showToast('Travel plan created successfully! ✈️');
       navigate(`/plan/${plan.id}`);
     } catch {
-      setError('Greška pri kreiranju plana. Pokušajte ponovo.');
+      setError('Error creating plan. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -54,7 +54,7 @@ const CreateTravelPlanPage = () => {
     <div className="max-w-2xl mx-auto px-4 py-8">
       <Link to="/dashboard" className="inline-flex items-center gap-1.5 text-slate-500 hover:text-sky-600 text-sm mb-6 transition-colors group">
         <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
-        Nazad na dashboard
+        Back to dashboard
       </Link>
 
       <div className="card">
@@ -63,8 +63,8 @@ const CreateTravelPlanPage = () => {
             <Plane className="w-5 h-5 text-sky-500" strokeWidth={1.5} />
           </div>
           <div>
-            <h1 className="text-slate-900 text-xl">Novo putovanje</h1>
-            <p className="text-slate-500 text-sm">Unesite osnovne podatke o putovanju</p>
+            <h1 className="text-slate-900 text-xl">New trip</h1>
+            <p className="text-slate-500 text-sm">Enter basic trip details</p>
           </div>
         </div>
 
@@ -76,16 +76,15 @@ const CreateTravelPlanPage = () => {
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="label">Naziv putovanja *</label>
+            <label className="label">Trip name *</label>
             <input
               className="input"
               value={form.name}
               onChange={e => f('name', e.target.value)}
-              placeholder="npr. Ljetovanje u Grčkoj"
+              placeholder="e.g. Summer in Greece"
               maxLength={200}
               required
             />
-            {/* Brojač karaktera — pojavljuje se kad korisnik počne kucati */}
             {form.name.length > 0 && (
               <p className={`text-xs mt-1 text-right ${form.name.length > 180 ? 'text-rose-500' : 'text-slate-400'}`}>
                 {form.name.length}/200
@@ -94,19 +93,19 @@ const CreateTravelPlanPage = () => {
           </div>
 
           <div>
-            <label className="label">Opis</label>
+            <label className="label">Description</label>
             <textarea
               className="input resize-none"
               value={form.description}
               onChange={e => f('description', e.target.value)}
               rows={3}
-              placeholder="Kratki opis putovanja..."
+              placeholder="Short trip description..."
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="label">Početni datum *</label>
+              <label className="label">Start date *</label>
               <input
                 type="date"
                 className="input"
@@ -117,7 +116,7 @@ const CreateTravelPlanPage = () => {
               />
             </div>
             <div>
-              <label className="label">Krajnji datum *</label>
+              <label className="label">End date *</label>
               <input
                 type="date"
                 className="input"
@@ -130,7 +129,7 @@ const CreateTravelPlanPage = () => {
           </div>
 
           <div>
-            <label className="label">Planirani budžet (€) *</label>
+            <label className="label">Planned budget (€) *</label>
             <div className="relative">
               <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-semibold">€</span>
               <input
@@ -147,24 +146,24 @@ const CreateTravelPlanPage = () => {
           </div>
 
           <div>
-            <label className="label">Napomene</label>
+            <label className="label">Notes</label>
             <textarea
               className="input resize-none"
               value={form.notes}
               onChange={e => f('notes', e.target.value)}
               rows={3}
-              placeholder="Savjeti, podsjetnici, ideje..."
+              placeholder="Tips, reminders, ideas..."
             />
           </div>
 
           <div className="flex gap-3 pt-2 border-t border-slate-100">
             <button type="button" onClick={() => navigate('/dashboard')} className="btn-outline flex-1">
-              Odustani
+              Cancel
             </button>
             <button type="submit" className="btn-sky flex-1" disabled={loading}>
               {loading
-                ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Kreiranje...</>
-                : '✈️ Kreiraj plan'}
+                ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Creating...</>
+                : '✈️ Create plan'}
             </button>
           </div>
         </form>

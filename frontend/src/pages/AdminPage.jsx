@@ -19,7 +19,7 @@ const AdminPage = () => {
       const data = await authService.getAllUsers();
       setUsers(data);
     } catch {
-      showToast('Greška pri učitavanju korisnika.', 'error');
+      showToast('Error loading users.', 'error');
     } finally {
       setLoading(false);
     }
@@ -31,7 +31,7 @@ const AdminPage = () => {
 
   const handleDeleteClick = (u) => {
     if (u.id === currentUser.id) {
-      showToast('Ne možete obrisati vlastiti nalog.', 'error');
+      showToast('You cannot delete your own account.', 'error');
       return;
     }
     setConfirmModal({ id: u.id, name: `${u.firstName} ${u.lastName}` });
@@ -41,9 +41,9 @@ const AdminPage = () => {
     try {
       await authService.deleteUser(id);
       setUsers(prev => prev.filter(u => u.id !== id));
-      showToast('Korisnik uspješno obrisan.');
+      showToast('User deleted successfully.');
     } catch {
-      showToast('Greška pri brisanju korisnika.', 'error');
+      showToast('Error deleting user.', 'error');
     }
   };
 
@@ -52,9 +52,9 @@ const AdminPage = () => {
     try {
       const updated = await authService.changeRole(id, newRole);
       setUsers(prev => prev.map(u => u.id === id ? { ...u, role: updated.role } : u));
-      showToast(`Uloga uspješno promijenjena u ${newRole}.`);
+      showToast(`Role changed to ${newRole} successfully.`);
     } catch {
-      showToast('Greška pri promjeni uloge.', 'error');
+      showToast('Error changing role.', 'error');
     }
   };
 
@@ -65,8 +65,8 @@ const AdminPage = () => {
 
       {confirmModal && (
         <ConfirmModal
-          title="Obrisati korisnika?"
-          message={`Obrisati korisnika "${confirmModal.name}"? Brisat će se i svi njegovi planovi putovanja i svi povezani podaci. Ova akcija se ne može poništiti.`}
+          title="Delete user?"
+          message={`Delete user "${confirmModal.name}"? All their travel plans and related data will also be removed. This action cannot be undone.`}
           onConfirm={() => handleDeleteConfirmed(confirmModal.id)}
           onClose={() => setConfirmModal(null)}
         />
@@ -82,7 +82,7 @@ const AdminPage = () => {
         </div>
         <div>
           <h1 className="text-slate-900 text-xl">Admin panel</h1>
-          <p className="text-slate-500 text-sm">Upravljajte korisnicima sistema</p>
+          <p className="text-slate-500 text-sm">Manage system users</p>
         </div>
       </div>
 
@@ -90,22 +90,22 @@ const AdminPage = () => {
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2">
             <Users className="w-5 h-5 text-slate-400" />
-            <h2 className="text-slate-800">Korisnici</h2>
+            <h2 className="text-slate-800">Users</h2>
           </div>
-          <span className="badge-neutral">{users.length} ukupno</span>
+          <span className="badge-neutral">{users.length} total</span>
         </div>
 
         {users.length === 0 ? (
           <div className="empty-state py-10">
             <Users className="w-12 h-12 text-slate-200 mb-3" />
-            <p className="text-slate-400 text-sm font-medium">Nema registrovanih korisnika.</p>
+            <p className="text-slate-400 text-sm font-medium">No registered users.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-slate-100">
-                  {['ID', 'Korisnik', 'Email', 'Uloga', 'Akcije'].map((h, i) => (
+                  {['ID', 'User', 'Email', 'Role', 'Actions'].map((h, i) => (
                     <th
                       key={h}
                       className={`py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider ${i === 4 ? 'text-right' : 'text-left'}`}
@@ -150,7 +150,7 @@ const AdminPage = () => {
                           onClick={() => handleDeleteClick(u)}
                           className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-semibold bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 transition-colors"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />Obriši
+                          <Trash2 className="w-3.5 h-3.5" />Delete
                         </button>
                       </div>
                     </td>

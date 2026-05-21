@@ -1,4 +1,4 @@
-import api from './axiosConfig';
+import api, { sharedApi } from './axiosConfig';
 
 const sharingService = {
   createShareToken: async (data) => {
@@ -16,14 +16,13 @@ const sharingService = {
     return response.data;
   },
 
-  // Javni endpoint — interceptor dodaje token samo ako postoji
   getSharedPlan: async (token) => {
-    const response = await api.get(`/api/sharing/${token}/plan`);
+    const response = await sharedApi.get(`/api/sharing/${token}/plan`);
     return response.data;
   },
 
   validateToken: async (token) => {
-    const response = await api.get(`/api/sharing/${token}/validate`);
+    const response = await sharedApi.get(`/api/sharing/${token}/validate`);
     return response.data;
   },
 

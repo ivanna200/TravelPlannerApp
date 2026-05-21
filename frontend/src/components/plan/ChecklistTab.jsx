@@ -3,8 +3,8 @@ import { CheckSquare, Plus, CheckCircle } from 'lucide-react';
 import ConfirmModal from '../ConfirmModal';
 
 const SUGGESTIONS = [
-  'Pasoš', 'Karta', 'Hotel', 'Osiguranje', 'Punjač',
-  'Adapter', 'Lijekovi', 'Gotovina', 'Sunčane naočale',
+  'Passport', 'Ticket', 'Hotel', 'Insurance', 'Charger',
+  'Adapter', 'Medicine', 'Cash', 'Sunglasses',
 ];
 
 const ChecklistTab = ({ hook }) => {
@@ -20,8 +20,8 @@ const ChecklistTab = ({ hook }) => {
     <>
       {confirmModal && (
         <ConfirmModal
-          title="Obrisati stavku?"
-          message={`Obrisati "${confirmModal.name}" sa liste? Ova akcija se ne može poništiti.`}
+          title="Delete item?"
+          message={`Delete "${confirmModal.name}" from the list? This action cannot be undone.`}
           onConfirm={handleDeleteConfirmed}
           onClose={() => setConfirmModal(null)}
         />
@@ -29,13 +29,13 @@ const ChecklistTab = ({ hook }) => {
 
       <div className="space-y-4">
         <h2 className="section-title">
-          <CheckSquare className="w-5 h-5 text-violet-500" />Packing lista
+          <CheckSquare className="w-5 h-5 text-violet-500" />Packing list
         </h2>
 
         {checklist.length > 0 && (
           <div className="card">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-semibold text-slate-700">Napredak</span>
+              <span className="text-sm font-semibold text-slate-700">Progress</span>
               <span className="text-sm font-bold text-slate-800">{completedCount} / {checklist.length}</span>
             </div>
             <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
@@ -46,7 +46,7 @@ const ChecklistTab = ({ hook }) => {
             </div>
             {allDone && (
               <div className="alert-success mt-3 text-sm">
-                <CheckCircle className="w-4 h-4 shrink-0" />Sve je spakováno! Sretan put! 🎉
+                <CheckCircle className="w-4 h-4 shrink-0" />All packed! Have a great trip! 🎉
               </div>
             )}
           </div>
@@ -58,10 +58,10 @@ const ChecklistTab = ({ hook }) => {
               className="input flex-1"
               value={input}
               onChange={e => setInput(e.target.value)}
-              placeholder="Dodajte stavku (Pasoš, Punjač, Osiguranje...)"
+              placeholder="Add an item (Passport, Charger, Insurance...)"
             />
             <button type="submit" className="btn-sky shrink-0">
-              <Plus className="w-4 h-4" />Dodaj
+              <Plus className="w-4 h-4" />Add
             </button>
           </form>
         </div>
@@ -80,11 +80,11 @@ const ChecklistTab = ({ hook }) => {
             <div className="card">
               <div className="empty-state py-8">
                 <CheckSquare className="w-12 h-12 text-slate-200 mb-3" />
-                <p className="text-slate-400 text-sm">Lista je prazna. Koristite brze prijedloge ili upišite stavku.</p>
+                <p className="text-slate-400 text-sm">The list is empty. Use quick suggestions or type an item.</p>
               </div>
             </div>
           )}
-       
+
           {[false, true].map(done => (
             <Fragment key={String(done)}>
               {checklist.filter(c => c.isCompleted === done).map(item => (
@@ -101,7 +101,7 @@ const ChecklistTab = ({ hook }) => {
                       {item.name}
                     </span>
                     {item.isCompleted && (
-                      <span className="text-xs text-emerald-500 font-semibold">✓ Spakováno</span>
+                      <span className="text-xs text-emerald-500 font-semibold">✓ Packed</span>
                     )}
                   </label>
                   <button

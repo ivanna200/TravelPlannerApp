@@ -1,7 +1,7 @@
 import { useState, useEffect }  from 'react';
 import { useParams, Link }       from 'react-router-dom';
 import sharingService            from '../services/sharingService';
-import sharedPlanService         from '../services/sharedPlanService';
+import sharedPlanService from '../services/sharedPlanService';
 import LoadingSpinner            from '../components/LoadingSpinner';
 import Modal                     from '../components/Modal';
 import ConfirmModal              from '../components/ConfirmModal';
@@ -14,10 +14,10 @@ import {
 } from 'lucide-react';
 
 const STATUS_BADGE = {
-  'Planirano':   'badge-sky',
-  'Rezervisano': 'badge-violet',
-  'Završeno':    'badge-success',
-  'Otkazano':    'badge-danger',
+  'Planned':   'badge-sky',
+  'Reserved':  'badge-violet',
+  'Completed': 'badge-success',
+  'Cancelled': 'badge-danger',
 };
 
 const SharedPlanPage = () => {
@@ -33,14 +33,14 @@ const SharedPlanPage = () => {
   const [localErr,     setLocalErr]     = useState('');
 
   const emptyDest = { name: '', location: '', arrivalDate: '', departureDate: '', description: '' };
-  const emptyAct  = { name: '', date: '', time: '', location: '', description: '', estimatedCost: 0, status: 'Planirano' };
+  const emptyAct  = { name: '', date: '', time: '', location: '', description: '', estimatedCost: 0, status: 'Planned' };
   const [destForm, setDestForm] = useState(emptyDest);
   const [actForm,  setActForm]  = useState(emptyAct);
 
   useEffect(() => {
     sharingService.getSharedPlan(token)
       .then(setData)
-      .catch(() => setError('Plan nije pronađen ili je link istekao.'))
+      .catch(() => setError('Plan not found or the link has expired.'))
       .finally(() => setLoading(false));
   }, [token]);
 
@@ -60,31 +60,31 @@ const SharedPlanPage = () => {
   };
 
   const spinBtn = (label) => apiLoading
-    ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Čuvanje...</>
+    ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Saving...</>
     : label;
 
   const handleAddDestination = async (e) => {
     e.preventDefault();
     if (!isDateInPlan(destForm.arrivalDate) || !isDateInPlan(destForm.departureDate)) {
-      setLocalErr('Datumi moraju biti unutar perioda putovanja!'); return;
+      setLocalErr('Dates must be within the travel period!'); return;
     }
     if (destForm.departureDate < destForm.arrivalDate) {
-      setLocalErr('Datum odlaska ne može biti prije datuma dolaska!'); return;
+      setLocalErr('Departure date cannot be before arrival date!'); return;
     }
     setApiLoading(true);
     try {
       const newDest = await sharedPlanService.addDestination(token, { ...destForm, travelPlanId: data.plan.id });
       setData(prev => ({ ...prev, plan: { ...prev.plan, destinations: [...(prev.plan.destinations || []), newDest] } }));
       setModal(null);
-      showToast('Destinacija uspješno dodana!');
-    } catch { setLocalErr('Greška pri dodavanju destinacije.'); }
+      showToast('Destination added successfully!');
+    } catch { setLocalErr('Error adding destination.'); }
     finally { setApiLoading(false); }
   };
 
   const handleAddActivity = async (e) => {
     e.preventDefault();
     if (!isDateInPlan(actForm.date)) {
-      setLocalErr('Datum aktivnosti mora biti unutar perioda putovanja!'); return;
+      setLocalErr('Activity date must be within the travel period!'); return;
     }
     setApiLoading(true);
     try {
@@ -95,8 +95,8 @@ const SharedPlanPage = () => {
       });
       setData(prev => ({ ...prev, plan: { ...prev.plan, activities: [...(prev.plan.activities || []), newAct] } }));
       setModal(null);
-      showToast('Aktivnost uspješno dodana!');
-    } catch { setLocalErr('Greška pri dodavanju aktivnosti.'); }
+      showToast('Activity added successfully!');
+    } catch { setLocalErr('Error adding activity.'); }
     finally { setApiLoading(false); }
   };
 
@@ -106,7 +106,7 @@ const SharedPlanPage = () => {
       onConfirm: async () => {
         await sharedPlanService.deleteDestination(token, dest.id);
         setData(prev => ({ ...prev, plan: { ...prev.plan, destinations: prev.plan.destinations.filter(d => d.id !== dest.id) } }));
-        showToast('Destinacija uspješno obrisana.');
+        showToast('Destination deleted successfully.');
       },
     });
   };
@@ -117,7 +117,7 @@ const SharedPlanPage = () => {
       onConfirm: async () => {
         await sharedPlanService.deleteActivity(token, act.id);
         setData(prev => ({ ...prev, plan: { ...prev.plan, activities: prev.plan.activities.filter(a => a.id !== act.id) } }));
-        showToast('Aktivnost uspješno obrisana.');
+        showToast('Activity deleted successfully.');
       },
     });
   };
@@ -125,11 +125,11 @@ const SharedPlanPage = () => {
   const handleDeleteConfirmed = async () => {
     if (!confirmModal) return;
     try { await confirmModal.onConfirm(); }
-    catch { showToast('Greška pri brisanju.', 'error'); }
+    catch { showToast('Error deleting.', 'error'); }
     finally { setConfirmModal(null); }
   };
 
-  if (loading) return <LoadingSpinner text="Učitavanje dijeljenog plana..." />;
+  if (loading) return <LoadingSpinner text="Loading shared plan..." />;
 
   if (error) {
     return (
@@ -138,15 +138,15 @@ const SharedPlanPage = () => {
           <div className="w-16 h-16 bg-rose-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
             <XCircle className="w-8 h-8 text-rose-400" />
           </div>
-          <h2 className="text-xl font-bold text-slate-800 mb-2">Link nije validan</h2>
+          <h2 className="text-xl font-bold text-slate-800 mb-2">Invalid link</h2>
           <p className="text-slate-500 text-sm mb-6">{error}</p>
-          <Link to="/login" className="btn-primary">Prijavi se</Link>
+          <Link to="/login" className="btn-primary">Sign in</Link>
         </div>
       </div>
     );
   }
 
-  const { plan, accessType } = data;
+  const { plan, checklist, accessType } = data;
   const isEdit = accessType === 'EDIT';
 
   const activitiesByDate = (plan.activities || [])
@@ -167,98 +167,98 @@ const SharedPlanPage = () => {
 
       {confirmModal && (
         <ConfirmModal
-          title="Potvrdi brisanje"
-          message={`Obrisati "${confirmModal.name}"? Ova akcija se ne može poništiti.`}
+          title="Confirm deletion"
+          message={`Delete "${confirmModal.name}"? This action cannot be undone.`}
           onConfirm={handleDeleteConfirmed}
           onClose={() => setConfirmModal(null)}
         />
       )}
 
       {modal === 'dest' && (
-        <Modal title="Nova destinacija" onClose={() => setModal(null)}>
+        <Modal title="New destination" onClose={() => setModal(null)}>
           <form onSubmit={handleAddDestination} className="space-y-4">
             <div className="alert-info text-xs">
               <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-              Datumi moraju biti unutar perioda putovanja: {formatDateRange(plan.startDate, plan.endDate)}
+              Dates must be within the travel period: {formatDateRange(plan.startDate, plan.endDate)}
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="label">Naziv *</label>
+                <label className="label">Name *</label>
                 <input className="input" value={destForm.name}
                   onChange={e => setDestForm({ ...destForm, name: e.target.value })}
-                  placeholder="npr. Pariz" required />
+                  placeholder="e.g. Paris" required />
               </div>
               <div>
-                <label className="label">Lokacija *</label>
+                <label className="label">Location *</label>
                 <input className="input" value={destForm.location}
                   onChange={e => setDestForm({ ...destForm, location: e.target.value })}
-                  placeholder="npr. Francuska" required />
+                  placeholder="e.g. France" required />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="label">Datum dolaska *</label>
+                <label className="label">Arrival date *</label>
                 <input type="date" className="input" value={destForm.arrivalDate}
                   min={planStart} max={planEnd}
                   onChange={e => setDestForm({ ...destForm, arrivalDate: e.target.value })} required />
               </div>
               <div>
-                <label className="label">Datum odlaska *</label>
+                <label className="label">Departure date *</label>
                 <input type="date" className="input" value={destForm.departureDate}
                   min={destForm.arrivalDate || planStart} max={planEnd}
                   onChange={e => setDestForm({ ...destForm, departureDate: e.target.value })} required />
               </div>
             </div>
             <div>
-              <label className="label">Opis</label>
+              <label className="label">Description</label>
               <input className="input" value={destForm.description}
                 onChange={e => setDestForm({ ...destForm, description: e.target.value })}
-                placeholder="Kratki opis..." />
+                placeholder="Short description..." />
             </div>
             {localErr && <div className="alert-error text-xs"><AlertCircle className="w-3.5 h-3.5 shrink-0" />{localErr}</div>}
             <div className="flex gap-3 pt-2">
-              <button type="button" onClick={() => setModal(null)} className="btn-outline flex-1">Odustani</button>
-              <button type="submit" className="btn-primary flex-1" disabled={apiLoading}>{spinBtn('Sačuvaj')}</button>
+              <button type="button" onClick={() => setModal(null)} className="btn-outline flex-1">Cancel</button>
+              <button type="submit" className="btn-primary flex-1" disabled={apiLoading}>{spinBtn('Save')}</button>
             </div>
           </form>
         </Modal>
       )}
 
       {modal === 'act' && (
-        <Modal title="Nova aktivnost" onClose={() => setModal(null)}>
+        <Modal title="New activity" onClose={() => setModal(null)}>
           <form onSubmit={handleAddActivity} className="space-y-4">
             <div className="alert-info text-xs">
               <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-              Datum mora biti unutar perioda putovanja: {formatDateRange(plan.startDate, plan.endDate)}
+              Date must be within the travel period: {formatDateRange(plan.startDate, plan.endDate)}
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="label">Naziv *</label>
+                <label className="label">Name *</label>
                 <input className="input" value={actForm.name}
                   onChange={e => setActForm({ ...actForm, name: e.target.value })}
-                  placeholder="npr. Obilazak muzeja" required />
+                  placeholder="e.g. Museum visit" required />
               </div>
               <div>
-                <label className="label">Lokacija</label>
+                <label className="label">Location</label>
                 <input className="input" value={actForm.location}
                   onChange={e => setActForm({ ...actForm, location: e.target.value })}
-                  placeholder="npr. Pariz" />
+                  placeholder="e.g. Paris" />
               </div>
             </div>
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <label className="label">Datum *</label>
+                <label className="label">Date *</label>
                 <input type="date" className="input" value={actForm.date}
                   min={planStart} max={planEnd}
                   onChange={e => setActForm({ ...actForm, date: e.target.value })} required />
               </div>
               <div>
-                <label className="label">Vrijeme</label>
+                <label className="label">Time</label>
                 <input type="time" className="input" value={actForm.time}
                   onChange={e => setActForm({ ...actForm, time: e.target.value })} />
               </div>
               <div>
-                <label className="label">Trošak (€)</label>
+                <label className="label">Cost (€)</label>
                 <input type="number" min="0" step="0.01" className="input"
                   value={actForm.estimatedCost}
                   onChange={e => setActForm({ ...actForm, estimatedCost: e.target.value })} />
@@ -273,31 +273,29 @@ const SharedPlanPage = () => {
                 </select>
               </div>
               <div>
-                <label className="label">Opis</label>
+                <label className="label">Description</label>
                 <input className="input" value={actForm.description}
                   onChange={e => setActForm({ ...actForm, description: e.target.value })}
-                  placeholder="Kratki opis..." />
+                  placeholder="Short description..." />
               </div>
             </div>
             {localErr && <div className="alert-error text-xs"><AlertCircle className="w-3.5 h-3.5 shrink-0" />{localErr}</div>}
             <div className="flex gap-3 pt-2">
-              <button type="button" onClick={() => setModal(null)} className="btn-outline flex-1">Odustani</button>
-              <button type="submit" className="btn-primary flex-1" disabled={apiLoading}>{spinBtn('Sačuvaj')}</button>
+              <button type="button" onClick={() => setModal(null)} className="btn-outline flex-1">Cancel</button>
+              <button type="submit" className="btn-primary flex-1" disabled={apiLoading}>{spinBtn('Save')}</button>
             </div>
           </form>
         </Modal>
       )}
 
-      {/* Access type banner */}
       <div className={`py-3 px-4 text-center text-sm font-semibold ${isEdit ? 'bg-emerald-500 text-white' : 'bg-primary-500 text-white'}`}>
         {isEdit
-          ? <><Pencil className="inline w-4 h-4 mr-2" />Dijeljeni plan — Pristup za uređivanje</>
-          : <><Eye className="inline w-4 h-4 mr-2" />Dijeljeni plan — Samo pregled</>}
+          ? <><Pencil className="inline w-4 h-4 mr-2" />Shared plan — Edit access</>
+          : <><Eye className="inline w-4 h-4 mr-2" />Shared plan — View only</>}
       </div>
 
       <div className="max-w-3xl mx-auto px-4 py-8 space-y-5">
 
-        {/* Osnovni podaci */}
         <div className="card">
           <h1 className="text-2xl font-bold text-slate-900 mb-2">{plan.name}</h1>
           {plan.description && <p className="text-slate-500 mb-4 text-sm">{plan.description}</p>}
@@ -305,14 +303,14 @@ const SharedPlanPage = () => {
             <div className="bg-slate-50 rounded-xl p-3 flex items-center gap-3">
               <Calendar className="w-5 h-5 text-sky-500 shrink-0" />
               <div>
-                <div className="text-xs text-slate-500">Period putovanja</div>
+                <div className="text-xs text-slate-500">Travel period</div>
                 <div className="text-sm font-semibold text-slate-800">{formatDateRange(plan.startDate, plan.endDate)}</div>
               </div>
             </div>
             <div className="bg-emerald-50 rounded-xl p-3 flex items-center gap-3">
               <Wallet className="w-5 h-5 text-emerald-600 shrink-0" />
               <div>
-                <div className="text-xs text-slate-500">Planirani budžet</div>
+                <div className="text-xs text-slate-500">Planned budget</div>
                 <div className="text-sm font-bold text-emerald-700">{plan.budget?.toLocaleString()} €</div>
               </div>
             </div>
@@ -324,23 +322,22 @@ const SharedPlanPage = () => {
           )}
         </div>
 
-        {/* Destinacije */}
         <div className="card">
           <div className="flex items-center justify-between mb-4">
             <h2 className="section-title">
               <MapPin className="w-5 h-5 text-sky-500" />
-              Destinacije ({plan.destinations?.length || 0})
+              Destinations ({plan.destinations?.length || 0})
             </h2>
             {isEdit && (
               <button onClick={() => openModal('dest')} className="btn-sky">
-                <Plus className="w-4 h-4" />Dodaj
+                <Plus className="w-4 h-4" />Add
               </button>
             )}
           </div>
           {(!plan.destinations || plan.destinations.length === 0) ? (
             <div className="empty-state py-6">
               <MapPin className="w-10 h-10 text-slate-200 mb-2" />
-              <p className="text-slate-400 text-sm">Nema destinacija.</p>
+              <p className="text-slate-400 text-sm">No destinations.</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -364,23 +361,22 @@ const SharedPlanPage = () => {
           )}
         </div>
 
-        {/* Aktivnosti grupisane po datumu */}
         <div className="card">
           <div className="flex items-center justify-between mb-4">
             <h2 className="section-title">
               <Activity className="w-5 h-5 text-primary-500" />
-              Aktivnosti ({plan.activities?.length || 0})
+              Activities ({plan.activities?.length || 0})
             </h2>
             {isEdit && (
               <button onClick={() => openModal('act')} className="btn-sky">
-                <Plus className="w-4 h-4" />Dodaj
+                <Plus className="w-4 h-4" />Add
               </button>
             )}
           </div>
           {(!plan.activities || plan.activities.length === 0) ? (
             <div className="empty-state py-6">
               <Activity className="w-10 h-10 text-slate-200 mb-2" />
-              <p className="text-slate-400 text-sm">Nema aktivnosti.</p>
+              <p className="text-slate-400 text-sm">No activities.</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -422,15 +418,14 @@ const SharedPlanPage = () => {
           )}
         </div>
 
-        {/* Checklist — samo pregled */}
-        {plan.checklist && plan.checklist.length > 0 && (
+        {checklist && checklist.length > 0 && (
           <div className="card">
             <h2 className="section-title mb-4">
               <CheckSquare className="w-5 h-5 text-violet-500" />
-              Packing lista ({plan.checklist.filter(c => c.isCompleted).length}/{plan.checklist.length})
+              Packing list ({checklist.filter(c => c.isCompleted).length}/{checklist.length})
             </h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {plan.checklist.map(item => (
+              {checklist.map(item => (
                 <div key={item.id} className={`flex items-center gap-2 p-2 rounded-lg ${item.isCompleted ? 'bg-emerald-50' : 'bg-slate-50'}`}>
                   <div className={`w-4 h-4 rounded flex items-center justify-center shrink-0 ${item.isCompleted ? 'bg-emerald-500' : 'border-2 border-slate-300'}`}>
                     {item.isCompleted && <span className="text-white text-xs">✓</span>}

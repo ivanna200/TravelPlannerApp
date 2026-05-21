@@ -9,7 +9,6 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// CORS - dozvoli frontend
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
@@ -20,11 +19,10 @@ builder.Services.AddCors(options =>
     });
 });
 
-// JWT autentifikacija
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 
 var secret = jwtSettings["Secret"]
-    ?? throw new InvalidOperationException("JwtSettings:Secret nije konfigurisan u appsettings.json.");
+    ?? throw new InvalidOperationException("JwtSettings:Secret is not configured in appsettings.json.");
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -56,7 +54,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
-// Service Fabric Remoting
 ServiceRuntime.RegisterServiceAsync("ApiGatewayType",
     context => new ApiGateway.ApiGateway(context))
     .GetAwaiter().GetResult();

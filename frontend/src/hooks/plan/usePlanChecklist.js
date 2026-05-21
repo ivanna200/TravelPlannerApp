@@ -19,9 +19,9 @@ export const usePlanChecklist = (planId) => {
     try {
       await addChecklistItem({ name: input.trim(), travelPlanId: parseInt(planId) });
       setInput('');
-      showToast('Stavka dodana na listu!');
+      showToast('Item added to the list!');
     } catch {
-      showToast('Greška pri dodavanju stavke.', 'error');
+      showToast('Error adding item.', 'error');
     }
   };
 
@@ -29,7 +29,7 @@ export const usePlanChecklist = (planId) => {
     try {
       await toggleChecklistItem(id);
     } catch {
-      showToast('Greška pri označavanju stavke.', 'error');
+      showToast('Error updating item.', 'error');
     }
   };
 
@@ -38,9 +38,9 @@ export const usePlanChecklist = (planId) => {
     if (!confirmModal) return;
     try {
       await removeChecklistItem(confirmModal.id);
-      showToast('Stavka uspješno obrisana.');
+      showToast('Item deleted successfully.');
     } catch {
-      showToast('Greška pri brisanju stavke.', 'error');
+      showToast('Error deleting item.', 'error');
     } finally {
       setConfirmModal(null);
     }

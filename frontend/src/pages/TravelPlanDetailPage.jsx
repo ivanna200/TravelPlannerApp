@@ -23,12 +23,12 @@ import {
 } from 'lucide-react';
 
 const TABS = [
-  { id: 'overview',     label: 'Pregled',     icon: BarChart3   },
-  { id: 'destinations', label: 'Destinacije', icon: MapPin      },
-  { id: 'activities',   label: 'Aktivnosti',  icon: Activity    },
-  { id: 'expenses',     label: 'Troškovi',    icon: Wallet      },
-  { id: 'checklist',    label: 'Checklist',   icon: CheckSquare },
-  { id: 'sharing',      label: 'Dijeljenje',  icon: Share2      },
+  { id: 'overview',     label: 'Overview',     icon: BarChart3   },
+  { id: 'destinations', label: 'Destinations', icon: MapPin      },
+  { id: 'activities',   label: 'Activities',   icon: Activity    },
+  { id: 'expenses',     label: 'Expenses',     icon: Wallet      },
+  { id: 'checklist',    label: 'Checklist',    icon: CheckSquare },
+  { id: 'sharing',      label: 'Sharing',      icon: Share2      },
 ];
 
 const TravelPlanDetailPage = () => {
@@ -55,12 +55,11 @@ const TravelPlanDetailPage = () => {
 
   if (loading && !plan) return <LoadingSpinner />;
   if (!plan) return (
-    <div className="page-container text-center py-16 text-slate-500">Plan nije pronađen.</div>
+    <div className="page-container text-center py-16 text-slate-500">Plan not found.</div>
   );
 
   const completedItems = checklist.filter(c => c.isCompleted).length;
 
-  // Ispravka: guard za plannedBudget === 0 da izbjegnemo NaN (0/0 = NaN)
   const budgetPct = budgetSummary && budgetSummary.plannedBudget > 0
     ? Math.min((budgetSummary.totalExpenses / budgetSummary.plannedBudget) * 100, 100)
     : 0;
@@ -70,13 +69,12 @@ const TravelPlanDetailPage = () => {
   return (
     <div className="page-container">
 
-      {/* ── Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
         <div>
           <Link to="/dashboard"
             className="inline-flex items-center gap-1.5 text-slate-500 hover:text-sky-600 text-sm mb-2 transition-colors group">
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
-            Moja putovanja
+            My trips
           </Link>
           <h1 className="text-slate-900">{plan.name}</h1>
           <div className="flex flex-wrap items-center gap-4 mt-1.5 text-sm text-slate-500">
@@ -88,8 +86,8 @@ const TravelPlanDetailPage = () => {
             </span>
           </div>
         </div>
-        <Link to={`/edit-plan/${id}`} className="btn-outline self-start">
-          <Pencil className="w-4 h-4" />Uredi plan
+        <Link to={`/edit-plan/${id}`} className="btn-sky self-start">
+          <Pencil className="w-4 h-4" />Edit plan
         </Link>
       </div>
 
@@ -99,7 +97,6 @@ const TravelPlanDetailPage = () => {
         </div>
       )}
 
-      {/* ── Tabs navigacija ── */}
       <div className="flex gap-1.5 mb-6 overflow-x-auto pb-1">
         {TABS.map(t => (
           <button

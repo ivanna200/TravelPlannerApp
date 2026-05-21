@@ -14,24 +14,24 @@ const ExpensesTab = ({ hook, planStart, planEnd, dateRangeLabel }) => {
   } = hook;
 
   const spinBtn = (label) => loading
-    ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Čuvanje...</>
+    ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Saving...</>
     : label;
 
   const formFields = (
     <>
       <div className="alert-info text-xs">
         <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-        Datum troška mora biti unutar perioda putovanja: {dateRangeLabel}
+        Expense date must be within the travel period: {dateRangeLabel}
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="label">Naziv *</label>
+          <label className="label">Name *</label>
           <input className="input" value={form.name}
             onChange={e => setForm({ ...form, name: e.target.value })}
-            placeholder="npr. Avionska karta" required />
+            placeholder="e.g. Flight ticket" required />
         </div>
         <div>
-          <label className="label">Kategorija</label>
+          <label className="label">Category</label>
           <select className="select" value={form.category}
             onChange={e => setForm({ ...form, category: e.target.value })}>
             {EXPENSE_CATEGORIES.map(c => <option key={c}>{c}</option>)}
@@ -40,64 +40,62 @@ const ExpensesTab = ({ hook, planStart, planEnd, dateRangeLabel }) => {
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="label">Iznos (€) *</label>
+          <label className="label">Amount (€) *</label>
           <input type="number" min="0.01" step="0.01" className="input" value={form.amount}
             onChange={e => setForm({ ...form, amount: e.target.value })} required />
         </div>
         <div>
-          <label className="label">Datum</label>
+          <label className="label">Date</label>
           <input type="date" className="input" value={form.date}
             min={planStart} max={planEnd}
             onChange={e => setForm({ ...form, date: e.target.value })} />
         </div>
       </div>
       <div>
-        <label className="label">Opis</label>
+        <label className="label">Description</label>
         <input className="input" value={form.description}
           onChange={e => setForm({ ...form, description: e.target.value })}
-          placeholder="Kratki opis..." />
+          placeholder="Short description..." />
       </div>
     </>
   );
 
   return (
     <>
-      {/* ── Modali ── */}
       {confirmModal && (
         <ConfirmModal
-          title="Obrisati trošak?"
-          message={`Obrisati "${confirmModal.name}"? Ova akcija se ne može poništiti.`}
+          title="Delete expense?"
+          message={`Delete "${confirmModal.name}"? This action cannot be undone.`}
           onConfirm={handleDeleteConfirmed}
           onClose={() => setConfirmModal(null)}
         />
       )}
       {(modal === 'add' || modal === 'edit') && (
         <Modal
-          title={modal === 'add' ? 'Novi trošak' : 'Uredi trošak'}
+          title={modal === 'add' ? 'New expense' : 'Edit expense'}
           onClose={closeModal}
         >
           <form onSubmit={handleSubmit} className="space-y-4">
             {formFields}
             {error && <div className="alert-error text-xs"><AlertCircle className="w-3.5 h-3.5 shrink-0" />{error}</div>}
             <div className="flex gap-3 pt-2">
-              <button type="button" onClick={closeModal} className="btn-outline flex-1">Odustani</button>
+              <button type="button" onClick={closeModal} className="btn-outline flex-1">Cancel</button>
               <button type="submit" className="btn-primary flex-1" disabled={loading}>
-                {spinBtn(modal === 'add' ? 'Sačuvaj trošak' : 'Ažuriraj trošak')}
+                {spinBtn(modal === 'add' ? 'Save expense' : 'Update expense')}
               </button>
             </div>
           </form>
         </Modal>
       )}
 
-      {/* ── Sadržaj ── */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="section-title">
             <Wallet className="w-5 h-5 text-emerald-500" />
-            Troškovi ({expenses.length})
+            Expenses ({expenses.length})
           </h2>
           <button onClick={openAdd} className="btn-sky">
-            <Plus className="w-4 h-4" />Dodaj
+            <Plus className="w-4 h-4" />Add
           </button>
         </div>
 
@@ -105,24 +103,24 @@ const ExpensesTab = ({ hook, planStart, planEnd, dateRangeLabel }) => {
           <div className="grid grid-cols-3 gap-3">
             <div className="card-sm text-center">
               <div className="text-xl font-bold text-slate-800">{budgetSummary.plannedBudget} €</div>
-              <div className="text-xs text-slate-400 mt-1 font-medium">Planirani budžet</div>
+              <div className="text-xs text-slate-400 mt-1 font-medium">Planned budget</div>
             </div>
             <div className="card-sm text-center bg-rose-50 border-rose-100">
               <div className="text-xl font-bold text-rose-500">{budgetSummary.totalExpenses} €</div>
-              <div className="text-xs text-slate-400 mt-1 font-medium">Potrošeno</div>
+              <div className="text-xs text-slate-400 mt-1 font-medium">Spent</div>
             </div>
             <div className={`card-sm text-center ${budgetSummary.remainingBudget >= 0 ? 'bg-emerald-50 border-emerald-100' : 'bg-rose-50 border-rose-100'}`}>
               <div className={`text-xl font-bold ${budgetSummary.remainingBudget >= 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
                 {budgetSummary.remainingBudget} €
               </div>
-              <div className="text-xs text-slate-400 mt-1 font-medium">Preostalo</div>
+              <div className="text-xs text-slate-400 mt-1 font-medium">Remaining</div>
             </div>
           </div>
         )}
 
         {budgetSummary?.byCategory?.length > 0 && (
           <div className="card">
-            <h3 className="text-sm font-bold text-slate-700 mb-4">Troškovi po kategorijama</h3>
+            <h3 className="text-sm font-bold text-slate-700 mb-4">Expenses by category</h3>
             <div className="space-y-2.5">
               {budgetSummary.byCategory.map(c => {
                 const pct = budgetSummary.totalExpenses > 0
@@ -147,7 +145,7 @@ const ExpensesTab = ({ hook, planStart, planEnd, dateRangeLabel }) => {
           <div className="card">
             <div className="empty-state">
               <Wallet className="w-12 h-12 text-slate-200 mb-3" />
-              <p className="text-slate-400 text-sm">Nema evidentiranih troškova.</p>
+              <p className="text-slate-400 text-sm">No expenses recorded.</p>
             </div>
           </div>
         )}

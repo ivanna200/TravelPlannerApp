@@ -26,9 +26,9 @@ export const usePlanSharing = (planId) => {
       });
       setShareToken(result);
       setSharings(prev => [result, ...prev]);
-      showToast('Share link uspješno kreiran!');
+      showToast('Share link created successfully!');
     } catch {
-      showToast('Greška pri kreiranju linka.', 'error');
+      showToast('Error creating link.', 'error');
     }
   };
 
@@ -36,7 +36,7 @@ export const usePlanSharing = (planId) => {
     if (!shareToken) return;
     navigator.clipboard.writeText(shareToken.shareUrl);
     setCopied(true);
-    showToast('Link kopiran u clipboard!');
+    showToast('Link copied to clipboard!');
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -45,9 +45,9 @@ export const usePlanSharing = (planId) => {
       await sharingService.deleteShareToken(id);
       setSharings(prev => prev.filter(s => s.id !== id));
       if (shareToken?.id === id) setShareToken(null);
-      showToast('Link uspješno opozvan.');
+      showToast('Link revoked successfully.');
     } catch {
-      showToast('Greška pri opozivanju linka.', 'error');
+      showToast('Error revoking link.', 'error');
     }
   };
 
