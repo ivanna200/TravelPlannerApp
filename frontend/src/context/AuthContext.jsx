@@ -28,6 +28,22 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
+  useEffect(() => {
+    if (!user) return;
+
+    const validate = () => authService.validateSession().catch(() => {});
+
+    validate();
+    const interval = setInterval(validate, 5000);
+    const onFocus = () => validate();
+
+    window.addEventListener('focus', onFocus);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', onFocus);
+    };
+  }, [user]);
+
   const login = useCallback(async (data) => {
     try {
       const result = await authService.login(data);

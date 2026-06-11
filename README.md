@@ -286,7 +286,7 @@ TravelPlannerApp/
 
 ## 13. Use case diagram
 
-See [docs/use-case-diagram.md](docs/use-case-diagram.md) for a Mermaid use case diagram (actors: Guest, User, Admin; all specification features except the route-map extension).
+See [docs/use-case-diagram.md](docs/use-case-diagram.md) for a simple use case diagram (User, Admin, Guest; specification scope without the route-map extension).
 
 ---
 

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../hooks/useToast';
@@ -13,20 +13,33 @@ const AdminPage = () => {
   const [users,        setUsers]        = useState([]);
   const [loading,      setLoading]      = useState(true);
   const [confirmModal, setConfirmModal] = useState(null);
+  const pendingDeletesRef = useRef(new Set());
+  const loadIdRef         = useRef(0);
 
-  const loadUsers = useCallback(async () => {
+  const loadUsers = useCallback(async (silent = false) => {
+    const loadId = ++loadIdRef.current;
     try {
       const data = await authService.getAllUsers();
-      setUsers(data);
+      if (loadId !== loadIdRef.current) return;
+      setUsers(data.filter(u => !pendingDeletesRef.current.has(u.id)));
     } catch {
-      showToast('Error loading users.', 'error');
+      if (!silent) showToast('Error loading users.', 'error');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [showToast]);
 
   useEffect(() => {
-    loadUsers();
+    loadUsers(false);
+
+    const interval = setInterval(() => loadUsers(true), 5000);
+    const onFocus = () => loadUsers(true);
+
+    window.addEventListener('focus', onFocus);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', onFocus);
+    };
   }, [loadUsers]);
 
   const handleDeleteClick = (u) => {
@@ -38,12 +51,18 @@ const AdminPage = () => {
   };
 
   const handleDeleteConfirmed = async (id) => {
+    pendingDeletesRef.current.add(id);
+    setUsers(prev => prev.filter(u => u.id !== id));
     try {
       await authService.deleteUser(id);
-      setUsers(prev => prev.filter(u => u.id !== id));
+      loadIdRef.current++;
       showToast('User deleted successfully.');
     } catch {
+      pendingDeletesRef.current.delete(id);
+      loadUsers(true);
       showToast('Error deleting user.', 'error');
+    } finally {
+      pendingDeletesRef.current.delete(id);
     }
   };
 

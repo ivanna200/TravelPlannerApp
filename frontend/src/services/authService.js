@@ -45,6 +45,13 @@ const authService = {
     const response = await api.patch(`/api/users/${id}/role`, { role: newRole });
     return response.data;
   },
+
+  validateSession: async () => {
+    const user = authService.getCurrentUser();
+    if (!user?.id) return;
+    const response = await api.get(`/api/users/${user.id}`);
+    return response.data;
+  },
 };
 
 export default authService;

@@ -1,3 +1,4 @@
+using ApiGateway.Middleware;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.ServiceFabric.Services.Runtime;
@@ -51,6 +52,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors("AllowFrontend");
 app.UseAuthentication();
+app.UseMiddleware<UserExistsMiddleware>();
 app.UseAuthorization();
 app.MapControllers();
 

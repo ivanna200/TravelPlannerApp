@@ -1,53 +1,24 @@
 # TravelPlanner — Use Case Diagram
 
-Actors and use cases aligned with the project specification (excluding the optional route-map extension).
+Specification scope (route-map extension excluded).
+
+## Diagram
 
 ```mermaid
-flowchart LR
-    subgraph actors [Actors]
-        Guest((Guest))
-        User((Registered User))
-        Admin((Admin))
-    end
+flowchart TB
+    User((User))
+    Admin((Admin))
 
-    subgraph auth [Authentication]
-        UC1[Register]
-        UC2[Login]
+    subgraph System[Travel Planner]
+        UC1(Login / Register)
+        UC2(Manage travel plan)
+        UC3(Manage destinations)
+        UC4(Manage activities)
+        UC5(Manage expenses)
+        UC6(Packing list)
+        UC7(Share plan)
+        UC8(Admin panel)
     end
-
-    subgraph plans [Travel Plans]
-        UC3[Create travel plan]
-        UC4[View dashboard]
-        UC5[Edit travel plan]
-        UC6[Delete travel plan]
-        UC7[Export PDF report]
-    end
-
-    subgraph planData [Plan Data]
-        UC8[Manage destinations]
-        UC9[Manage activities]
-        UC10[View calendar]
-        UC11[Manage expenses]
-        UC12[View budget summary]
-        UC13[Manage packing checklist]
-    end
-
-    subgraph sharing [Sharing]
-        UC14[Create share link VIEW/EDIT]
-        UC15[Revoke share link]
-        UC16[Display QR code]
-        UC17[View shared plan]
-        UC18[Edit shared plan via link]
-    end
-
-    subgraph admin [Administration]
-        UC19[List users]
-        UC20[Delete user]
-        UC21[Change user role]
-    end
-
-    Guest --> UC2
-    Guest --> UC17
 
     User --> UC1
     User --> UC2
@@ -56,38 +27,29 @@ flowchart LR
     User --> UC5
     User --> UC6
     User --> UC7
-    User --> UC8
-    User --> UC9
-    User --> UC10
-    User --> UC11
-    User --> UC12
-    User --> UC13
-    User --> UC14
-    User --> UC15
-    User --> UC16
 
-    Admin --> UC2
-    Admin --> UC4
-    Admin --> UC19
-    Admin --> UC20
-    Admin --> UC21
-
-    UC14 -.-> UC16
-    UC14 -.-> UC17
-    UC14 -.-> UC18
+    Admin --> UC1
+    Admin --> UC8
 ```
 
-## Actor summary
+**Shared link (no account):** guest opens link → *View plan* (VIEW) or *Edit destinations/activities* (EDIT).
+
+## Actors
 
 | Actor | Description |
 |-------|-------------|
-| **Guest** | Can open a shared link (VIEW) and sign in |
-| **Registered User** | Owns travel plans; full CRUD and sharing |
-| **Admin** | User management plus all user capabilities |
+| User | Registered user |
+| Admin | Manages users |
 
-## Shared link access
+## Use cases
 
-| Access type | Allowed use cases |
-|-------------|-------------------|
-| **VIEW** | View plan, destinations, activities, checklist (read-only) |
-| **EDIT** | VIEW + add/delete destinations and activities |
+| # | Use case | Note |
+|---|----------|------|
+| 1 | Login / Register | JWT |
+| 2 | Manage travel plan | CRUD, dates, budget |
+| 3 | Manage destinations | Within trip dates |
+| 4 | Manage activities | List and calendar |
+| 5 | Manage expenses | Categories, budget summary |
+| 6 | Packing list | Toggle items |
+| 7 | Share plan | VIEW / EDIT link, QR code |
+| 8 | Admin panel | Users: list, delete, role |

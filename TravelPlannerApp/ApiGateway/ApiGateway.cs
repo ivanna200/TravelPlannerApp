@@ -1,3 +1,4 @@
+using ApiGateway.Middleware;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.ServiceFabric.Services.Communication.AspNetCore;
@@ -76,6 +77,7 @@ namespace ApiGateway
                         app.UseSwaggerUI();
                         app.UseCors("AllowFrontend");
                         app.UseAuthentication();
+                        app.UseMiddleware<UserExistsMiddleware>();
                         app.UseAuthorization();
                         app.MapControllers();
 
