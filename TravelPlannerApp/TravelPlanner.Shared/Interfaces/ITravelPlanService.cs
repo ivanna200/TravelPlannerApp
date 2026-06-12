@@ -16,6 +16,8 @@ namespace TravelPlanner.Shared.Interfaces
 
         Task<List<TravelPlanDto>> GetUserTravelPlansAsync(int userId);
 
+        Task<List<TravelPlanDto>> GetAllTravelPlansAsync();
+
         Task<TravelPlanDto> CreateTravelPlanAsync(CreateTravelPlanDto dto);
 
         Task<TravelPlanDto?> UpdateTravelPlanAsync(int id, UpdateTravelPlanDto dto);

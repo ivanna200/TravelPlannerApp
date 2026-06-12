@@ -1,6 +1,7 @@
 import { Fragment } from 'react';
-import { CheckSquare, Plus, CheckCircle } from 'lucide-react';
+import { CheckSquare, Plus, CheckCircle, Pencil } from 'lucide-react';
 import ConfirmModal from '../ConfirmModal';
+import Modal from '../Modal';
 
 const SUGGESTIONS = [
   'Passport', 'Ticket', 'Hotel', 'Insurance', 'Charger',
@@ -12,7 +13,8 @@ const ChecklistTab = ({ hook }) => {
     checklist, input, setInput,
     completedCount, progressPct, allDone,
     confirmModal, setConfirmModal,
-    handleAdd, handleToggle,
+    editModal, setEditModal, editName, setEditName,
+    handleAdd, handleToggle, handleEditClick, handleEditSave,
     handleDeleteClick, handleDeleteConfirmed,
   } = hook;
 
@@ -25,6 +27,27 @@ const ChecklistTab = ({ hook }) => {
           onConfirm={handleDeleteConfirmed}
           onClose={() => setConfirmModal(null)}
         />
+      )}
+
+      {editModal && (
+        <Modal title="Edit item" onClose={() => setEditModal(null)}>
+          <form onSubmit={handleEditSave} className="space-y-4">
+            <div>
+              <label className="label">Item name *</label>
+              <input
+                className="input"
+                value={editName}
+                onChange={e => setEditName(e.target.value)}
+                required
+                autoFocus
+              />
+            </div>
+            <div className="flex gap-3 pt-2">
+              <button type="button" onClick={() => setEditModal(null)} className="btn-outline flex-1">Cancel</button>
+              <button type="submit" className="btn-primary flex-1">Save</button>
+            </div>
+          </form>
+        </Modal>
       )}
 
       <div className="space-y-4">
@@ -104,12 +127,21 @@ const ChecklistTab = ({ hook }) => {
                       <span className="text-xs text-emerald-500 font-semibold">✓ Packed</span>
                     )}
                   </label>
-                  <button
-                    onClick={() => handleDeleteClick(item)}
-                    className="text-slate-300 hover:text-rose-400 transition-colors w-6 h-6 flex items-center justify-center text-xl font-light"
-                  >
-                    ×
-                  </button>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => handleEditClick(item)}
+                      className="text-slate-300 hover:text-sky-500 transition-colors w-7 h-7 flex items-center justify-center"
+                      title="Edit item"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteClick(item)}
+                      className="text-slate-300 hover:text-rose-400 transition-colors w-7 h-7 flex items-center justify-center text-xl font-light"
+                    >
+                      ×
+                    </button>
+                  </div>
                 </div>
               ))}
             </Fragment>

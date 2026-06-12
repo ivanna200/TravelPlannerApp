@@ -3,11 +3,13 @@ import { useTravelPlan } from '../useTravelPlan';
 import { useToast }      from '../useToast';
 
 export const usePlanChecklist = (planId) => {
-  const { checklist, addChecklistItem, toggleChecklistItem, removeChecklistItem } = useTravelPlan();
+  const { checklist, addChecklistItem, updateChecklistItem, toggleChecklistItem, removeChecklistItem } = useTravelPlan();
   const { showToast } = useToast();
 
   const [input,        setInput]        = useState('');
   const [confirmModal, setConfirmModal] = useState(null);
+  const [editModal,    setEditModal]    = useState(null);
+  const [editName,     setEditName]     = useState('');
 
   const completedCount = checklist.filter(c => c.isCompleted).length;
   const progressPct    = checklist.length ? (completedCount / checklist.length) * 100 : 0;
@@ -33,6 +35,23 @@ export const usePlanChecklist = (planId) => {
     }
   };
 
+  const handleEditClick = (item) => {
+    setEditName(item.name);
+    setEditModal(item);
+  };
+
+  const handleEditSave = async (e) => {
+    e.preventDefault();
+    if (!editModal || !editName.trim()) return;
+    try {
+      await updateChecklistItem(editModal.id, { name: editName.trim(), isCompleted: editModal.isCompleted });
+      setEditModal(null);
+      showToast('Item updated successfully.');
+    } catch {
+      showToast('Error updating item.', 'error');
+    }
+  };
+
   const handleDeleteClick     = (item) => setConfirmModal(item);
   const handleDeleteConfirmed = async () => {
     if (!confirmModal) return;
@@ -50,7 +69,8 @@ export const usePlanChecklist = (planId) => {
     checklist, input, setInput,
     completedCount, progressPct, allDone,
     confirmModal, setConfirmModal,
-    handleAdd, handleToggle,
+    editModal, setEditModal, editName, setEditName,
+    handleAdd, handleToggle, handleEditClick, handleEditSave,
     handleDeleteClick, handleDeleteConfirmed,
   };
 };

@@ -33,6 +33,14 @@ namespace ApiGateway.Controllers
         private bool IsAdmin() =>
             User.IsInRole("Admin");
 
+        [HttpGet("admin/all")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetAllPlans()
+        {
+            var plans = await GetTravelProxy().GetAllTravelPlansAsync();
+            return Ok(plans);
+        }
+
         [HttpGet("{id}")]
         public async Task<IActionResult> GetPlan(int id)
         {

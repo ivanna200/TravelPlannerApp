@@ -167,6 +167,32 @@ namespace ApiGateway.Controllers
             }
         }
 
+        [HttpPut("{token}/destinations/{id:int}")]
+        public async Task<IActionResult> UpdateSharedDestination(string token, int id, [FromBody] UpdateDestinationDto dto)
+        {
+            var validation = await ValidateEditTokenAsync(token);
+            if (validation.Error != null) return validation.Error;
+
+            var dest = await GetTravelProxy().GetDestinationAsync(id);
+            if (dest == null)
+                return NotFound(new { message = "Destination not found." });
+
+            if (dest.TravelPlanId != validation.Value!.TravelPlanId)
+                return StatusCode(403, new { message = "Destination does not belong to the shared plan." });
+
+            try
+            {
+                var updated = await GetTravelProxy().UpdateDestinationAsync(id, dto);
+                if (updated == null)
+                    return NotFound(new { message = "Destination not found." });
+                return Ok(updated);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         [HttpDelete("{token}/destinations/{id:int}")]
         public async Task<IActionResult> DeleteSharedDestination(string token, int id)
         {
@@ -203,6 +229,32 @@ namespace ApiGateway.Controllers
             {
                 var activity = await GetTravelProxy().CreateActivityAsync(dto);
                 return Ok(activity);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpPut("{token}/activities/{id:int}")]
+        public async Task<IActionResult> UpdateSharedActivity(string token, int id, [FromBody] UpdateActivityDto dto)
+        {
+            var validation = await ValidateEditTokenAsync(token);
+            if (validation.Error != null) return validation.Error;
+
+            var activity = await GetTravelProxy().GetActivityAsync(id);
+            if (activity == null)
+                return NotFound(new { message = "Activity not found." });
+
+            if (activity.TravelPlanId != validation.Value!.TravelPlanId)
+                return StatusCode(403, new { message = "Activity does not belong to the shared plan." });
+
+            try
+            {
+                var updated = await GetTravelProxy().UpdateActivityAsync(id, dto);
+                if (updated == null)
+                    return NotFound(new { message = "Activity not found." });
+                return Ok(updated);
             }
             catch (ArgumentException ex)
             {

@@ -6,6 +6,11 @@ const travelPlanService = {
     return response.data;
   },
 
+  getAllPlans: async () => {
+    const response = await api.get('/api/travel-plans/admin/all');
+    return response.data;
+  },
+
   getPlan: async (id) => {
     const response = await api.get(`/api/travel-plans/${id}`);
     return response.data;

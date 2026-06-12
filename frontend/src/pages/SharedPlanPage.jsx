@@ -34,8 +34,12 @@ const SharedPlanPage = () => {
 
   const emptyDest = { name: '', location: '', arrivalDate: '', departureDate: '', description: '' };
   const emptyAct  = { name: '', date: '', time: '', location: '', description: '', estimatedCost: 0, status: 'Planned' };
+  const emptyPlan = { name: '', description: '', startDate: '', endDate: '', budget: '', notes: '' };
   const [destForm, setDestForm] = useState(emptyDest);
   const [actForm,  setActForm]  = useState(emptyAct);
+  const [planForm, setPlanForm] = useState(emptyPlan);
+  const [editingDestId, setEditingDestId] = useState(null);
+  const [editingActId,  setEditingActId]  = useState(null);
 
   useEffect(() => {
     sharingService.getSharedPlan(token)
@@ -55,8 +59,54 @@ const SharedPlanPage = () => {
   const openModal = (type) => {
     setDestForm(emptyDest);
     setActForm(emptyAct);
+    setPlanForm(emptyPlan);
+    setEditingDestId(null);
+    setEditingActId(null);
     setLocalErr('');
     setModal(type);
+  };
+
+  const openEditDestination = (dest) => {
+    setDestForm({
+      name: dest.name,
+      location: dest.location,
+      arrivalDate: dest.arrivalDate?.split('T')[0] || '',
+      departureDate: dest.departureDate?.split('T')[0] || '',
+      description: dest.description || '',
+    });
+    setEditingDestId(dest.id);
+    setLocalErr('');
+    setModal('dest');
+  };
+
+  const openEditActivity = (act) => {
+    setActForm({
+      name: act.name,
+      date: act.date?.split('T')[0] || '',
+      time: act.time || '',
+      location: act.location || '',
+      description: act.description || '',
+      estimatedCost: act.estimatedCost || 0,
+      status: act.status || 'Planned',
+    });
+    setEditingActId(act.id);
+    setLocalErr('');
+    setModal('act');
+  };
+
+  const openEditPlan = () => {
+    if (!data?.plan) return;
+    const p = data.plan;
+    setPlanForm({
+      name: p.name,
+      description: p.description || '',
+      startDate: p.startDate?.split('T')[0] || '',
+      endDate: p.endDate?.split('T')[0] || '',
+      budget: p.budget ?? '',
+      notes: p.notes || '',
+    });
+    setLocalErr('');
+    setModal('plan');
   };
 
   const spinBtn = (label) => apiLoading
@@ -73,11 +123,23 @@ const SharedPlanPage = () => {
     }
     setApiLoading(true);
     try {
-      const newDest = await sharedPlanService.addDestination(token, { ...destForm, travelPlanId: data.plan.id });
-      setData(prev => ({ ...prev, plan: { ...prev.plan, destinations: [...(prev.plan.destinations || []), newDest] } }));
+      if (editingDestId) {
+        const updated = await sharedPlanService.updateDestination(token, editingDestId, destForm);
+        setData(prev => ({
+          ...prev,
+          plan: {
+            ...prev.plan,
+            destinations: prev.plan.destinations.map(d => d.id === editingDestId ? updated : d),
+          },
+        }));
+        showToast('Destination updated successfully!');
+      } else {
+        const newDest = await sharedPlanService.addDestination(token, { ...destForm, travelPlanId: data.plan.id });
+        setData(prev => ({ ...prev, plan: { ...prev.plan, destinations: [...(prev.plan.destinations || []), newDest] } }));
+        showToast('Destination added successfully!');
+      }
       setModal(null);
-      showToast('Destination added successfully!');
-    } catch { setLocalErr('Error adding destination.'); }
+    } catch { setLocalErr(editingDestId ? 'Error updating destination.' : 'Error adding destination.'); }
     finally { setApiLoading(false); }
   };
 
@@ -88,15 +150,51 @@ const SharedPlanPage = () => {
     }
     setApiLoading(true);
     try {
-      const newAct = await sharedPlanService.addActivity(token, {
-        ...actForm,
-        travelPlanId:  data.plan.id,
-        estimatedCost: parseFloat(actForm.estimatedCost) || 0,
-      });
-      setData(prev => ({ ...prev, plan: { ...prev.plan, activities: [...(prev.plan.activities || []), newAct] } }));
+      if (editingActId) {
+        const updated = await sharedPlanService.updateActivity(token, editingActId, {
+          ...actForm,
+          estimatedCost: parseFloat(actForm.estimatedCost) || 0,
+        });
+        setData(prev => ({
+          ...prev,
+          plan: {
+            ...prev.plan,
+            activities: prev.plan.activities.map(a => a.id === editingActId ? updated : a),
+          },
+        }));
+        showToast('Activity updated successfully!');
+      } else {
+        const newAct = await sharedPlanService.addActivity(token, {
+          ...actForm,
+          travelPlanId: data.plan.id,
+          estimatedCost: parseFloat(actForm.estimatedCost) || 0,
+        });
+        setData(prev => ({ ...prev, plan: { ...prev.plan, activities: [...(prev.plan.activities || []), newAct] } }));
+        showToast('Activity added successfully!');
+      }
       setModal(null);
-      showToast('Activity added successfully!');
-    } catch { setLocalErr('Error adding activity.'); }
+    } catch { setLocalErr(editingActId ? 'Error updating activity.' : 'Error adding activity.'); }
+    finally { setApiLoading(false); }
+  };
+
+  const handleUpdatePlan = async (e) => {
+    e.preventDefault();
+    if (planForm.endDate < planForm.startDate) {
+      setLocalErr('End date cannot be before start date!'); return;
+    }
+    if (parseFloat(planForm.budget) < 0) {
+      setLocalErr('Budget cannot be negative!'); return;
+    }
+    setApiLoading(true);
+    try {
+      const updated = await sharedPlanService.updatePlan(token, {
+        ...planForm,
+        budget: parseFloat(planForm.budget) || 0,
+      });
+      setData(prev => ({ ...prev, plan: { ...prev.plan, ...updated } }));
+      setModal(null);
+      showToast('Plan updated successfully!');
+    } catch { setLocalErr('Error updating plan.'); }
     finally { setApiLoading(false); }
   };
 
@@ -175,7 +273,7 @@ const SharedPlanPage = () => {
       )}
 
       {modal === 'dest' && (
-        <Modal title="New destination" onClose={() => setModal(null)}>
+        <Modal title={editingDestId ? 'Edit destination' : 'New destination'} onClose={() => setModal(null)}>
           <form onSubmit={handleAddDestination} className="space-y-4">
             <div className="alert-info text-xs">
               <AlertCircle className="w-3.5 h-3.5 shrink-0" />
@@ -225,7 +323,7 @@ const SharedPlanPage = () => {
       )}
 
       {modal === 'act' && (
-        <Modal title="New activity" onClose={() => setModal(null)}>
+        <Modal title={editingActId ? 'Edit activity' : 'New activity'} onClose={() => setModal(null)}>
           <form onSubmit={handleAddActivity} className="space-y-4">
             <div className="alert-info text-xs">
               <AlertCircle className="w-3.5 h-3.5 shrink-0" />
@@ -288,6 +386,51 @@ const SharedPlanPage = () => {
         </Modal>
       )}
 
+      {modal === 'plan' && (
+        <Modal title="Edit plan" onClose={() => setModal(null)}>
+          <form onSubmit={handleUpdatePlan} className="space-y-4">
+            <div>
+              <label className="label">Name *</label>
+              <input className="input" value={planForm.name}
+                onChange={e => setPlanForm({ ...planForm, name: e.target.value })} required />
+            </div>
+            <div>
+              <label className="label">Description</label>
+              <textarea className="input resize-none" rows={2} value={planForm.description}
+                onChange={e => setPlanForm({ ...planForm, description: e.target.value })} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="label">Start date *</label>
+                <input type="date" className="input" value={planForm.startDate}
+                  onChange={e => setPlanForm({ ...planForm, startDate: e.target.value })} required />
+              </div>
+              <div>
+                <label className="label">End date *</label>
+                <input type="date" className="input" value={planForm.endDate}
+                  min={planForm.startDate}
+                  onChange={e => setPlanForm({ ...planForm, endDate: e.target.value })} required />
+              </div>
+            </div>
+            <div>
+              <label className="label">Budget (€) *</label>
+              <input type="number" min="0" step="0.01" className="input" value={planForm.budget}
+                onChange={e => setPlanForm({ ...planForm, budget: e.target.value })} required />
+            </div>
+            <div>
+              <label className="label">Notes</label>
+              <textarea className="input resize-none" rows={2} value={planForm.notes}
+                onChange={e => setPlanForm({ ...planForm, notes: e.target.value })} />
+            </div>
+            {localErr && <div className="alert-error text-xs"><AlertCircle className="w-3.5 h-3.5 shrink-0" />{localErr}</div>}
+            <div className="flex gap-3 pt-2">
+              <button type="button" onClick={() => setModal(null)} className="btn-outline flex-1">Cancel</button>
+              <button type="submit" className="btn-primary flex-1" disabled={apiLoading}>{spinBtn('Save')}</button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
       <div className={`py-3 px-4 text-center text-sm font-semibold ${isEdit ? 'bg-emerald-500 text-white' : 'bg-primary-500 text-white'}`}>
         {isEdit
           ? <><Pencil className="inline w-4 h-4 mr-2" />Shared plan — Edit access</>
@@ -297,7 +440,14 @@ const SharedPlanPage = () => {
       <div className="max-w-3xl mx-auto px-4 py-8 space-y-5">
 
         <div className="card">
-          <h1 className="text-2xl font-bold text-slate-900 mb-2">{plan.name}</h1>
+          <div className="flex items-start justify-between gap-3 mb-2">
+            <h1 className="text-2xl font-bold text-slate-900">{plan.name}</h1>
+            {isEdit && (
+              <button onClick={openEditPlan} className="btn-outline text-xs shrink-0">
+                <Pencil className="w-3.5 h-3.5" />Edit plan
+              </button>
+            )}
+          </div>
           {plan.description && <p className="text-slate-500 mb-4 text-sm">{plan.description}</p>}
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-slate-50 rounded-xl p-3 flex items-center gap-3">
@@ -351,9 +501,14 @@ const SharedPlanPage = () => {
                     {d.description && <div className="text-xs text-slate-500 mt-1 bg-white rounded-lg p-1.5">{d.description}</div>}
                   </div>
                   {isEdit && (
-                    <button onClick={() => handleDeleteDestination(d)} className="btn-danger shrink-0 self-start">
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    <div className="flex gap-1 shrink-0 self-start">
+                      <button onClick={() => openEditDestination(d)} className="btn-outline px-2 py-1.5">
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button onClick={() => handleDeleteDestination(d)} className="btn-danger px-2 py-1.5">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   )}
                 </div>
               ))}
@@ -405,9 +560,14 @@ const SharedPlanPage = () => {
                           </div>
                         </div>
                         {isEdit && (
-                          <button onClick={() => handleDeleteActivity(a)} className="btn-danger shrink-0 self-start">
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          <div className="flex gap-1 shrink-0 self-start">
+                            <button onClick={() => openEditActivity(a)} className="btn-outline px-2 py-1.5">
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                            <button onClick={() => handleDeleteActivity(a)} className="btn-danger px-2 py-1.5">
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         )}
                       </div>
                     ))}

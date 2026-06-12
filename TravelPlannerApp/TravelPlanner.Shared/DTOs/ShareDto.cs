@@ -4,7 +4,7 @@
     {
         public int Id { get; set; }
         public string Token { get; set; } = string.Empty;
-        public string AccessType { get; set; } = string.Empty; // VIEW or EDIT
+        public string AccessType { get; set; } = string.Empty;
         public int TravelPlanId { get; set; }
         public DateTime ExpiresAt { get; set; }
         public string ShareUrl { get; set; } = string.Empty;
@@ -13,7 +13,7 @@
     public class CreateShareDto
     {
         public int TravelPlanId { get; set; }
-        public string AccessType { get; set; } = "VIEW"; // VIEW or EDIT
+        public string AccessType { get; set; } = "VIEW";
         public int ExpiryDays { get; set; } = 7;
     }
 

@@ -39,6 +39,16 @@ namespace TravelPlanService.Services
             return plans.Select(MapToDto).ToList();
         }
 
+        public async Task<List<TravelPlanDto>> GetAllTravelPlansAsync()
+        {
+            var plans = await _context.TravelPlans
+                .Include(t => t.Destinations)
+                .Include(t => t.Activities)
+                .OrderByDescending(t => t.CreatedAt)
+                .ToListAsync();
+            return plans.Select(MapToDto).ToList();
+        }
+
         public async Task<TravelPlanDto> CreateTravelPlanAsync(CreateTravelPlanDto dto)
         {
             if (dto.EndDate < dto.StartDate)

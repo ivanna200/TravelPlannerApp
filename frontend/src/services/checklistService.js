@@ -16,6 +16,11 @@ const checklistService = {
     return response.data;
   },
 
+  updateItem: async (id, data) => {
+    const response = await api.put(`/api/checklist/${id}`, data);
+    return response.data;
+  },
+
   deleteItem: async (id) => {
     const response = await api.delete(`/api/checklist/${id}`);
     return response.data;

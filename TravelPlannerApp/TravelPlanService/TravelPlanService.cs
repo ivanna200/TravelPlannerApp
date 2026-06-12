@@ -33,6 +33,12 @@ namespace TravelPlanService
             return await GetSvc(scope).GetUserTravelPlansAsync(userId);
         }
 
+        public async Task<List<TravelPlanDto>> GetAllTravelPlansAsync()
+        {
+            using var scope = _serviceProvider.CreateScope();
+            return await GetSvc(scope).GetAllTravelPlansAsync();
+        }
+
         public async Task<TravelPlanDto> CreateTravelPlanAsync(CreateTravelPlanDto dto)
         {
             using var scope = _serviceProvider.CreateScope();

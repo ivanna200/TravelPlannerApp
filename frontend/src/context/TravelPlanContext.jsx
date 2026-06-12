@@ -186,6 +186,7 @@ export const TravelPlanProvider = ({ children }) => {
   };
 
   const addChecklistItem    = async (data) => { const r = await checklistService.createItem(data);  dispatch({ type: ACTION.ADD_CHECKLIST_ITEM,    payload: r }); return r; };
+  const updateChecklistItem = async (id, data) => { const r = await checklistService.updateItem(id, data); dispatch({ type: ACTION.UPDATE_CHECKLIST_ITEM, payload: r }); return r; };
   const toggleChecklistItem = async (id)   => { const r = await checklistService.toggleItem(id);    dispatch({ type: ACTION.UPDATE_CHECKLIST_ITEM, payload: r }); return r; };
   const removeChecklistItem = async (id)   => { await checklistService.deleteItem(id);               dispatch({ type: ACTION.REMOVE_CHECKLIST_ITEM, payload: id }); };
 
@@ -199,7 +200,7 @@ export const TravelPlanProvider = ({ children }) => {
       addDestination, updateDestination, removeDestination,
       addActivity, updateActivity, removeActivity,
       addExpense, updateExpense, removeExpense,
-      addChecklistItem, toggleChecklistItem, removeChecklistItem,
+      addChecklistItem, updateChecklistItem, toggleChecklistItem, removeChecklistItem,
       clearError,
     }}>
       {children}

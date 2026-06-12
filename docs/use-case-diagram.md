@@ -1,55 +1,46 @@
-# TravelPlanner — Use Case Diagram
+# TravelPlanner — Use Case dijagram
 
-Specification scope (route-map extension excluded).
+Opseg prema specifikaciji projektnog zadatka (sekcije 3.1–3.8).
 
-## Diagram
+![Use case dijagram](diagrams/use-case-diagram.png)
 
-```mermaid
-flowchart TB
-    User((User))
-    Admin((Admin))
+## Aktori
 
-    subgraph System[Travel Planner]
-        UC1(Login / Register)
-        UC2(Manage travel plan)
-        UC3(Manage destinations)
-        UC4(Manage activities)
-        UC5(Manage expenses)
-        UC6(Packing list)
-        UC7(Share plan)
-        UC8(Admin panel)
-    end
+| Aktor | Opis |
+|-------|------|
+| **Korisnik** | Registrovani korisnik; kreira i upravlja sopstvenim planovima putovanja |
+| **Admin** | Specijalizacija Korisnika — ima **sve** njegove use case-ove **plus** admin panel (spec. 3.7) |
+| **Gost** | Osoba bez naloga; pristupa dijeljenom planu putem linka ili QR koda |
 
-    User --> UC1
-    User --> UC2
-    User --> UC3
-    User --> UC4
-    User --> UC5
-    User --> UC6
-    User --> UC7
+### Generalizacija Admin → Korisnik
 
-    Admin --> UC1
-    Admin --> UC8
-```
+U UML notaciji, strelica **«generalizacija»** od Admina ka Korisniku znači da Admin **nasljeđuje** sve use case-ove Korisnika. Admin ne mora imati posebne linije ka UC1–UC7 jer ih automatski nasljeđuje.
 
-**Shared link (no account):** guest opens link → *View plan* (VIEW) or *Edit destinations/activities* (EDIT).
+U implementaciji Admin dodatno može pristupiti **tuđim** planovima (backend preskače provjeru vlasništva kada je uloga Admin).
 
-## Actors
+## Use case-ovi (8 — prema specifikaciji)
 
-| Actor | Description |
-|-------|-------------|
-| User | Registered user |
-| Admin | Manages users |
+| # | Use case | Sekcija spec. | Korisnik | Admin | Gost |
+|---|----------|---------------|:--------:|:-----:|:----:|
+| 1 | Registracija i login | 3.7 | ✓ | ✓* | |
+| 2 | Upravljanje planom putovanja | 3.1, 3.5 | ✓ | ✓* | |
+| 3 | Upravljanje destinacijama | 3.2 | ✓ | ✓* | |
+| 4 | Upravljanje aktivnostima | 3.3 | ✓ | ✓* | |
+| 5 | Troškovi i budžet | 3.4 | ✓ | ✓* | |
+| 6 | Checklist | 3.6 | ✓ | ✓* | |
+| 7 | Dijeljenje plana | 3.8 | ✓ | ✓* | ✓** |
+| 8 | Admin panel | 3.7 | | ✓ | |
 
-## Use cases
+\* Admin — nasljeđuje od Korisnika (generalizacija)
 
-| # | Use case | Note |
-|---|----------|------|
-| 1 | Login / Register | JWT |
-| 2 | Manage travel plan | CRUD, dates, budget |
-| 3 | Manage destinations | Within trip dates |
-| 4 | Manage activities | List and calendar |
-| 5 | Manage expenses | Categories, budget summary |
-| 6 | Packing list | Toggle items |
-| 7 | Share plan | VIEW / EDIT link, QR code |
-| 8 | Admin panel | Users: list, delete, role |
+\*\* Gost — samo pregled (VIEW) ili ograničeno uređivanje (EDIT) dijeljenog plana, bez naloga
+
+## Veza sa kodom
+
+| Use case | Frontend | Backend |
+|----------|----------|---------|
+| UC1 | `/login`, `/register` | `AuthController` |
+| UC2–UC6 | `/dashboard`, `/plan/:id`, … | Kontroleri + `PlanAccessHelper` |
+| UC7 (Korisnik) | dijeljenje u planu | `SharingController` (JWT) |
+| UC7 (Gost) | `/shared/:token` | `SharingController` (token) |
+| UC8 | `/admin` (Users + All plans) | `GET /api/travel-plans/admin/all`, `AuthController` |
