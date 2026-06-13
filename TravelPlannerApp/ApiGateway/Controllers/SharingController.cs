@@ -126,6 +126,7 @@ namespace ApiGateway.Controllers
         }
 
         [HttpPut("{token}/plan")]
+        [Authorize]
         public async Task<IActionResult> UpdateSharedPlan(string token, [FromBody] UpdateTravelPlanDto dto)
         {
             var validation = await ValidateEditTokenAsync(token);
@@ -145,6 +146,7 @@ namespace ApiGateway.Controllers
         }
 
         [HttpPost("{token}/destinations")]
+        [Authorize]
         public async Task<IActionResult> CreateSharedDestination(string token, [FromBody] CreateDestinationDto dto)
         {
             var validation = await ValidateEditTokenAsync(token);
@@ -168,6 +170,7 @@ namespace ApiGateway.Controllers
         }
 
         [HttpPut("{token}/destinations/{id:int}")]
+        [Authorize]
         public async Task<IActionResult> UpdateSharedDestination(string token, int id, [FromBody] UpdateDestinationDto dto)
         {
             var validation = await ValidateEditTokenAsync(token);
@@ -194,6 +197,7 @@ namespace ApiGateway.Controllers
         }
 
         [HttpDelete("{token}/destinations/{id:int}")]
+        [Authorize]
         public async Task<IActionResult> DeleteSharedDestination(string token, int id)
         {
             var validation = await ValidateEditTokenAsync(token);
@@ -214,6 +218,7 @@ namespace ApiGateway.Controllers
         }
 
         [HttpPost("{token}/activities")]
+        [Authorize]
         public async Task<IActionResult> CreateSharedActivity(string token, [FromBody] CreateActivityDto dto)
         {
             var validation = await ValidateEditTokenAsync(token);
@@ -237,6 +242,7 @@ namespace ApiGateway.Controllers
         }
 
         [HttpPut("{token}/activities/{id:int}")]
+        [Authorize]
         public async Task<IActionResult> UpdateSharedActivity(string token, int id, [FromBody] UpdateActivityDto dto)
         {
             var validation = await ValidateEditTokenAsync(token);
@@ -263,6 +269,7 @@ namespace ApiGateway.Controllers
         }
 
         [HttpDelete("{token}/activities/{id:int}")]
+        [Authorize]
         public async Task<IActionResult> DeleteSharedActivity(string token, int id)
         {
             var validation = await ValidateEditTokenAsync(token);

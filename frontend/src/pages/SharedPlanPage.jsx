@@ -1,5 +1,6 @@
 import { useState, useEffect }  from 'react';
-import { useParams, Link }       from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
 import sharingService            from '../services/sharingService';
 import sharedPlanService from '../services/sharedPlanService';
 import LoadingSpinner            from '../components/LoadingSpinner';
@@ -22,6 +23,8 @@ const STATUS_BADGE = {
 
 const SharedPlanPage = () => {
   const { token }     = useParams();
+  const navigate      = useNavigate();
+  const { user, loading: authLoading } = useAuth();
   const { showToast } = useToast();
 
   const [data,         setData]         = useState(null);
@@ -42,11 +45,19 @@ const SharedPlanPage = () => {
   const [editingActId,  setEditingActId]  = useState(null);
 
   useEffect(() => {
+    if (authLoading) return;
+
     sharingService.getSharedPlan(token)
-      .then(setData)
+      .then(result => {
+        if (result.accessType === 'EDIT' && !user) {
+          navigate(`/login?return=${encodeURIComponent(`/shared/${token}`)}`, { replace: true });
+          return;
+        }
+        setData(result);
+      })
       .catch(() => setError('Plan not found or the link has expired.'))
       .finally(() => setLoading(false));
-  }, [token]);
+  }, [token, user, authLoading, navigate]);
 
   const planStart = data?.plan?.startDate?.split('T')[0];
   const planEnd   = data?.plan?.endDate?.split('T')[0];
@@ -227,7 +238,7 @@ const SharedPlanPage = () => {
     finally { setConfirmModal(null); }
   };
 
-  if (loading) return <LoadingSpinner text="Loading shared plan..." />;
+  if (loading || authLoading) return <LoadingSpinner text="Loading shared plan..." />;
 
   if (error) {
     return (
@@ -433,7 +444,7 @@ const SharedPlanPage = () => {
 
       <div className={`py-3 px-4 text-center text-sm font-semibold ${isEdit ? 'bg-emerald-500 text-white' : 'bg-primary-500 text-white'}`}>
         {isEdit
-          ? <><Pencil className="inline w-4 h-4 mr-2" />Shared plan — Edit access</>
+          ? <><Pencil className="inline w-4 h-4 mr-2" />Shared plan — Edit access (login required)</>
           : <><Eye className="inline w-4 h-4 mr-2" />Shared plan — View only</>}
       </div>
 

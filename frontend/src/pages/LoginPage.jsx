@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { Plane, Mail, Lock, AlertCircle, MapPin, Calendar, Wallet, CheckSquare } from 'lucide-react';
 
@@ -13,6 +13,8 @@ const FEATURES = [
 const LoginPage = () => {
   const { login }   = useAuth();
   const navigate    = useNavigate();
+  const [searchParams] = useSearchParams();
+  const returnUrl = searchParams.get('return') || '/dashboard';
   const [form,    setForm]    = useState({ email: '', password: '' });
   const [error,   setError]   = useState('');
   const [loading, setLoading] = useState(false);
@@ -23,7 +25,7 @@ const LoginPage = () => {
     setLoading(true);
     try {
       const result = await login(form);
-      if (result.success) navigate('/dashboard');
+      if (result.success) navigate(returnUrl.startsWith('/') ? returnUrl : '/dashboard');
       else setError(result.message);
     } catch {
       setError('Login failed. Please try again.');

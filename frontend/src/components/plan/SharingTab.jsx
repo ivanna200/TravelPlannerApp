@@ -17,7 +17,8 @@ const SharingTab = ({ hook }) => {
       <div className="card">
         <p className="text-sm text-slate-500 mb-5">
           Generate a link and QR code to share this plan. Two access levels:
-          <strong> VIEW</strong> (view only) and <strong>EDIT</strong> (view and edit).
+          <strong> VIEW</strong> (anyone with the link, no login) and
+          <strong> EDIT</strong> (requires sign-in; valid EDIT link + account).
           Links expire after 7 days.
         </p>
         <div className="grid grid-cols-2 gap-4">

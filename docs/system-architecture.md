@@ -10,8 +10,8 @@ Mikroservisna arhitektura na Microsoft Service Fabric platformi.
 |------------|--------|-------------|------|
 | **ApiGateway** | Stateless | HTTP ulaz, JWT, CORS, validacija korisnika, orkestracija brisanja | — |
 | **UserService** | Stateless | Registracija, login, BCrypt, JWT, uloge | `UserServiceDB` |
-| **TravelPlanService** | Stateful | Planovi, destinacije, aktivnosti, share tokeni | `TravelPlanServiceDB` |
-| **ExpenseService** | Stateful | Troškovi, kategorije, budžet | `ExpenseServiceDB` |
+| **TravelPlanService** | Stateful | Planovi, destinacije, aktivnosti, share tokeni; SQL + `IReliableDictionary` cache | `TravelPlanServiceDB` |
+| **ExpenseService** | Stateful | Troškovi, kategorije, budžet; SQL + `IReliableDictionary` cache | `ExpenseServiceDB` |
 | **ChecklistService** | Stateless | Packing lista | `ChecklistServiceDB` |
 
 ## Protokoli komunikacije
@@ -36,6 +36,6 @@ ApiGateway orkestrira kaskadno brisanje:
 
 - **Database-per-service** — logičke veze između servisa (npr. `TravelPlanId`)
 - **ApiGateway** je jedini HTTP ulaz prema frontendu
-- **Stateful servisi** koriste replike u SF klasteru
+- **Stateful servisi** — SQL Server je izvor istine (trajna perzistencija, backup, pristup van klastera); **ReliableDictionary** na repliki drži runtime cache (npr. plan po ID, budžet summary) koji se invalidira pri upisima
 - **JWT** — validacija potpisa i isteka; middleware provjerava postojanje korisnika u bazi
-- **Dijeljenje** — VIEW/EDIT tokeni; backend validira token na svakom zahtjevu
+- **Dijeljenje** — VIEW link/QR bez login-a; EDIT link/QR zahtijeva JWT + validan EDIT token

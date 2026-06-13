@@ -1,16 +1,20 @@
-﻿using Microsoft.ServiceFabric.Services.Communication.Runtime;
+﻿using Microsoft.ServiceFabric.Data.Collections;
+using Microsoft.ServiceFabric.Services.Communication.Runtime;
 using Microsoft.ServiceFabric.Services.Remoting.Runtime;
 using Microsoft.ServiceFabric.Services.Runtime;
 using System.Fabric;
 using TravelPlanner.Shared.DTOs;
 using TravelPlanner.Shared.Interfaces;
+using TravelPlanService.Infrastructure;
 using TravelPlanService.Services;
 
 namespace TravelPlanService
 {
     internal sealed class TravelPlanService : StatefulService, ITravelPlanService
     {
+        private const string PlanCacheName = "planCache";
         private readonly IServiceProvider _serviceProvider;
+        private IReliableDictionary<int, string>? _planCache;
 
         public TravelPlanService(StatefulServiceContext context, IServiceProvider serviceProvider)
             : base(context)
@@ -18,13 +22,34 @@ namespace TravelPlanService
             _serviceProvider = serviceProvider;
         }
 
+        protected override async Task OnOpenAsync(ReplicaOpenMode openMode, CancellationToken cancellationToken)
+        {
+            _planCache = await StateManager.GetOrAddAsync<IReliableDictionary<int, string>>(PlanCacheName);
+            await base.OnOpenAsync(openMode, cancellationToken);
+        }
+
         private TravelPlanningService GetSvc(IServiceScope scope) =>
             scope.ServiceProvider.GetRequiredService<TravelPlanningService>();
 
+        private async Task InvalidatePlanCacheAsync(int planId)
+        {
+            if (_planCache == null) return;
+            await ReliableJsonCache.RemoveAsync(StateManager, _planCache, planId);
+        }
+
         public async Task<TravelPlanDto?> GetTravelPlanAsync(int id)
         {
+            if (_planCache != null)
+            {
+                var cached = await ReliableJsonCache.TryGetAsync<TravelPlanDto>(StateManager, _planCache, id);
+                if (cached != null) return cached;
+            }
+
             using var scope = _serviceProvider.CreateScope();
-            return await GetSvc(scope).GetTravelPlanAsync(id);
+            var plan = await GetSvc(scope).GetTravelPlanAsync(id);
+            if (plan != null && _planCache != null)
+                await ReliableJsonCache.SetAsync(StateManager, _planCache, id, plan);
+            return plan;
         }
 
         public async Task<List<TravelPlanDto>> GetUserTravelPlansAsync(int userId)
@@ -48,13 +73,17 @@ namespace TravelPlanService
         public async Task<TravelPlanDto?> UpdateTravelPlanAsync(int id, UpdateTravelPlanDto dto)
         {
             using var scope = _serviceProvider.CreateScope();
-            return await GetSvc(scope).UpdateTravelPlanAsync(id, dto);
+            var plan = await GetSvc(scope).UpdateTravelPlanAsync(id, dto);
+            if (plan != null) await InvalidatePlanCacheAsync(id);
+            return plan;
         }
 
         public async Task<bool> DeleteTravelPlanAsync(int id)
         {
             using var scope = _serviceProvider.CreateScope();
-            return await GetSvc(scope).DeleteTravelPlanAsync(id);
+            var deleted = await GetSvc(scope).DeleteTravelPlanAsync(id);
+            if (deleted) await InvalidatePlanCacheAsync(id);
+            return deleted;
         }
 
         public async Task<bool> DeleteUserPlansAsync(int userId)
@@ -78,19 +107,27 @@ namespace TravelPlanService
         public async Task<DestinationDto> CreateDestinationAsync(CreateDestinationDto dto)
         {
             using var scope = _serviceProvider.CreateScope();
-            return await GetSvc(scope).CreateDestinationAsync(dto);
+            var dest = await GetSvc(scope).CreateDestinationAsync(dto);
+            await InvalidatePlanCacheAsync(dto.TravelPlanId);
+            return dest;
         }
 
         public async Task<DestinationDto?> UpdateDestinationAsync(int id, UpdateDestinationDto dto)
         {
             using var scope = _serviceProvider.CreateScope();
-            return await GetSvc(scope).UpdateDestinationAsync(id, dto);
+            var existing = await GetSvc(scope).GetDestinationAsync(id);
+            var updated = await GetSvc(scope).UpdateDestinationAsync(id, dto);
+            if (existing != null) await InvalidatePlanCacheAsync(existing.TravelPlanId);
+            return updated;
         }
 
         public async Task<bool> DeleteDestinationAsync(int id)
         {
             using var scope = _serviceProvider.CreateScope();
-            return await GetSvc(scope).DeleteDestinationAsync(id);
+            var existing = await GetSvc(scope).GetDestinationAsync(id);
+            var deleted = await GetSvc(scope).DeleteDestinationAsync(id);
+            if (deleted && existing != null) await InvalidatePlanCacheAsync(existing.TravelPlanId);
+            return deleted;
         }
 
         public async Task<ActivityDto?> GetActivityAsync(int id)
@@ -114,21 +151,28 @@ namespace TravelPlanService
         public async Task<ActivityDto> CreateActivityAsync(CreateActivityDto dto)
         {
             using var scope = _serviceProvider.CreateScope();
-            return await GetSvc(scope).CreateActivityAsync(dto);
+            var activity = await GetSvc(scope).CreateActivityAsync(dto);
+            await InvalidatePlanCacheAsync(dto.TravelPlanId);
+            return activity;
         }
 
         public async Task<ActivityDto?> UpdateActivityAsync(int id, UpdateActivityDto dto)
         {
             using var scope = _serviceProvider.CreateScope();
-            return await GetSvc(scope).UpdateActivityAsync(id, dto);
+            var existing = await GetSvc(scope).GetActivityAsync(id);
+            var updated = await GetSvc(scope).UpdateActivityAsync(id, dto);
+            if (existing != null) await InvalidatePlanCacheAsync(existing.TravelPlanId);
+            return updated;
         }
 
         public async Task<bool> DeleteActivityAsync(int id)
         {
             using var scope = _serviceProvider.CreateScope();
-            return await GetSvc(scope).DeleteActivityAsync(id);
+            var existing = await GetSvc(scope).GetActivityAsync(id);
+            var deleted = await GetSvc(scope).DeleteActivityAsync(id);
+            if (deleted && existing != null) await InvalidatePlanCacheAsync(existing.TravelPlanId);
+            return deleted;
         }
-
 
         public async Task<SharePlanDto> CreateShareTokenAsync(CreateShareDto dto)
         {

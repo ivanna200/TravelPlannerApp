@@ -42,8 +42,8 @@ ApiGateway [Stateless] — JWT, CORS, autorizacija
 |--------|--------|-------------|
 | ApiGateway | Stateless | HTTP ulaz, JWT, orkestracija brisanja |
 | UserService | Stateless | Registracija, login, uloge |
-| TravelPlanService | Stateful | Planovi, destinacije, aktivnosti, share tokeni |
-| ExpenseService | Stateful | Troškovi, kategorije, budžet |
+| TravelPlanService | Stateful | Planovi, destinacije, aktivnosti, share tokeni; SQL + `IReliableDictionary` cache |
+| ExpenseService | Stateful | Troškovi, kategorije, budžet; SQL + `IReliableDictionary` cache |
 | ChecklistService | Stateless | Packing lista |
 
 ---
@@ -147,7 +147,35 @@ VITE_API_URL=http://localhost:8387
 |-------|------------|
 | User | CRUD nad sopstvenim planovima, destinacijama, aktivnostima, troškovima, checklistom; dijeljenje plana |
 | Admin | Sve kao User + admin panel (korisnici i svi planovi u sistemu) |
-| Gost | Pristup dijeljenom planu preko share tokena (VIEW ili EDIT) |
+| Gost | VIEW dijeljenog plana bez naloga; EDIT zahtijeva prijavu (JWT) + validan EDIT token |
+
+---
+
+## Stateful servisi — SQL + ReliableDictionary
+
+**SQL Server** je izvor istine (trajni podaci, backup, pristup van SF klastera).  
+**IReliableDictionary** na repliki drži runtime cache koji se invalidira pri upisima.
+
+| Servis | Fajl | Ime kolekcije | Ključ | Vrijednost (JSON) |
+|--------|------|---------------|-------|-------------------|
+| TravelPlanService | `TravelPlannerApp/TravelPlanService/TravelPlanService.cs` | `planCache` | `planId` | `TravelPlanDto` |
+| ExpenseService | `TravelPlannerApp/ExpenseService/ExpenseService.cs` | `budgetSummaryCache` | `travelPlanId` | `BudgetSummaryDto` |
+
+Helper za read/write/remove cache-a:
+
+| Servis | Helper |
+|--------|--------|
+| TravelPlanService | `TravelPlannerApp/TravelPlanService/Infrastructure/ReliableJsonCache.cs` |
+| ExpenseService | `TravelPlannerApp/ExpenseService/Infrastructure/ReliableJsonCache.cs` |
+
+**Napomena:** `IReliableQueue` i `IReliableConcurrentQueue` se ne koriste — komunikacija je sinhrona (HTTP → Remoting). Reliable Collections se fizički čuvaju na disku SF replike u runtime-u, ne u folderu projekta.
+
+**Dijeljenje plana:**
+
+| Tip linka | Login | Pristup |
+|-----------|-------|---------|
+| VIEW | Ne | Samo pregled plana |
+| EDIT | Da | Pregled + uređivanje metapodataka, destinacija i aktivnosti |
 
 ---
 
@@ -195,7 +223,7 @@ TravelPlannerApp/
 - Destinacije, aktivnosti (lista + kalendar)
 - Troškovi po kategorijama, automatski budžet
 - Packing checklist
-- Dijeljenje plana (VIEW / EDIT, QR kod)
+- Dijeljenje plana (VIEW bez login-a, EDIT sa login-om, QR kod)
 - Admin panel
 - PDF export pregleda plana
 

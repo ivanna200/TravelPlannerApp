@@ -10,7 +10,7 @@ Opseg prema specifikaciji projektnog zadatka (sekcije 3.1–3.8).
 |-------|------|
 | **Korisnik** | Registrovani korisnik; kreira i upravlja sopstvenim planovima putovanja |
 | **Admin** | Specijalizacija Korisnika — ima **sve** njegove use case-ove **plus** admin panel (spec. 3.7) |
-| **Gost** | Osoba bez naloga; pristupa dijeljenom planu putem linka ili QR koda |
+| **Gost** | VIEW dijeljenog plana bez naloga; za EDIT mora biti prijavljen |
 
 ### Generalizacija Admin → Korisnik
 
@@ -33,7 +33,7 @@ U implementaciji Admin dodatno može pristupiti **tuđim** planovima (backend pr
 
 \* Admin — nasljeđuje od Korisnika (generalizacija)
 
-\*\* Gost — samo pregled (VIEW) ili ograničeno uređivanje (EDIT) dijeljenog plana, bez naloga
+\*\* Gost — VIEW bez naloga; EDIT zahtijeva login (JWT) + validan EDIT token
 
 ## Veza sa kodom
 
@@ -42,5 +42,6 @@ U implementaciji Admin dodatno može pristupiti **tuđim** planovima (backend pr
 | UC1 | `/login`, `/register` | `AuthController` |
 | UC2–UC6 | `/dashboard`, `/plan/:id`, … | Kontroleri + `PlanAccessHelper` |
 | UC7 (Korisnik) | dijeljenje u planu | `SharingController` (JWT) |
-| UC7 (Gost) | `/shared/:token` | `SharingController` (token) |
+| UC7 (Gost VIEW) | `/shared/:token` | `SharingController` (token, bez JWT) |
+| UC7 (Gost EDIT) | `/shared/:token` → redirect `/login` | `SharingController` (JWT + EDIT token) |
 | UC8 | `/admin` (Users + All plans) | `GET /api/travel-plans/admin/all`, `AuthController` |
