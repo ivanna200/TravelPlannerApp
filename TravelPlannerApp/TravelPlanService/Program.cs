@@ -1,9 +1,11 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.ServiceFabric.Services.Runtime;
 using TravelPlanService.Data;
 using TravelPlanService.Services;
 
-var builder = WebApplication.CreateBuilder(args);
+var builder = Host.CreateApplicationBuilder(args);
 
 builder.Services.AddDbContext<TravelPlanDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")),
@@ -11,19 +13,10 @@ builder.Services.AddDbContext<TravelPlanDbContext>(options =>
 
 builder.Services.AddScoped<TravelPlanningService>();
 
-var app = builder.Build();
-
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<TravelPlanDbContext>();
-    db.Database.Migrate();
-}
+var host = builder.Build();
 
 ServiceRuntime.RegisterServiceAsync("TravelPlanServiceType",
-    context =>
-    {
-        var serviceProvider = app.Services;
-        return new TravelPlanService.TravelPlanService(context, serviceProvider);
-    }).GetAwaiter().GetResult();
+    context => new TravelPlanService.TravelPlanService(context, host.Services))
+    .GetAwaiter().GetResult();
 
-await Task.Delay(Timeout.Infinite);
+Thread.Sleep(Timeout.Infinite);

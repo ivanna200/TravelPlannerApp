@@ -8,6 +8,7 @@
     <ServerGarbageCollection>True</ServerGarbageCollection>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <SelfContained>True</SelfContained>
+    <EnableUnsafeBinaryFormatterSerialization>true</EnableUnsafeBinaryFormatterSerialization>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,10 +17,10 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.ServiceFabric.Data" Version="8.4.205-rc" />
-    <PackageReference Include="Microsoft.ServiceFabric.Data.Interfaces" Version="8.4.205-rc" />
-    <PackageReference Include="Microsoft.ServiceFabric.AspNetCore.Kestrel" Version="8.4.205-rc" />
-    <PackageReference Include="Microsoft.ServiceFabric.Services.Remoting" Version="8.4.205-rc" />
+    <PackageReference Include="Microsoft.ServiceFabric.Data" Version="8.4.268" />
+    <PackageReference Include="Microsoft.ServiceFabric.Data.Interfaces" Version="8.4.268" />
+    <PackageReference Include="Microsoft.ServiceFabric.AspNetCore.Kestrel" Version="8.4.268" />
+    <PackageReference Include="Microsoft.ServiceFabric.Services.Remoting" Version="8.4.268" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
   </ItemGroup>
 

@@ -1,10 +1,12 @@
-﻿using Microsoft.ServiceFabric.Data.Collections;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.ServiceFabric.Data.Collections;
 using Microsoft.ServiceFabric.Services.Communication.Runtime;
 using Microsoft.ServiceFabric.Services.Remoting.Runtime;
 using Microsoft.ServiceFabric.Services.Runtime;
 using System.Fabric;
 using TravelPlanner.Shared.DTOs;
 using TravelPlanner.Shared.Interfaces;
+using TravelPlanService.Data;
 using TravelPlanService.Infrastructure;
 using TravelPlanService.Services;
 
@@ -24,8 +26,19 @@ namespace TravelPlanService
 
         protected override async Task OnOpenAsync(ReplicaOpenMode openMode, CancellationToken cancellationToken)
         {
-            _planCache = await StateManager.GetOrAddAsync<IReliableDictionary<int, string>>(PlanCacheName);
             await base.OnOpenAsync(openMode, cancellationToken);
+        }
+
+        protected override async Task RunAsync(CancellationToken cancellationToken)
+        {
+            using (var scope = _serviceProvider.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<TravelPlanDbContext>();
+                await db.Database.MigrateAsync(cancellationToken);
+            }
+
+            _planCache = await StateManager.GetOrAddAsync<IReliableDictionary<int, string>>(PlanCacheName);
+            await Task.Delay(Timeout.Infinite, cancellationToken);
         }
 
         private TravelPlanningService GetSvc(IServiceScope scope) =>

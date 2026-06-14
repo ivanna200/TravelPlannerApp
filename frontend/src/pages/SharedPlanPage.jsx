@@ -9,6 +9,7 @@ import ConfirmModal              from '../components/ConfirmModal';
 import { useToast }              from '../hooks/useToast';
 import { formatDate, formatDateRange } from '../utils/formatDate';
 import { ACTIVITY_STATUSES }     from '../models/Activity';
+import { EXPENSE_CATEGORIES }    from '../models/Expense';
 import {
   Eye, Pencil, MapPin, Calendar, Wallet, Activity,
   Clock, XCircle, Plus, Trash2, AlertCircle, CheckSquare,
@@ -37,12 +38,16 @@ const SharedPlanPage = () => {
 
   const emptyDest = { name: '', location: '', arrivalDate: '', departureDate: '', description: '' };
   const emptyAct  = { name: '', date: '', time: '', location: '', description: '', estimatedCost: 0, status: 'Planned' };
+  const emptyExp  = { name: '', category: 'Transport', amount: '', date: '', description: '' };
   const emptyPlan = { name: '', description: '', startDate: '', endDate: '', budget: '', notes: '' };
   const [destForm, setDestForm] = useState(emptyDest);
   const [actForm,  setActForm]  = useState(emptyAct);
+  const [expForm,  setExpForm]  = useState(emptyExp);
   const [planForm, setPlanForm] = useState(emptyPlan);
+  const [checklistInput, setChecklistInput] = useState('');
   const [editingDestId, setEditingDestId] = useState(null);
   const [editingActId,  setEditingActId]  = useState(null);
+  const [editingExpId,  setEditingExpId]  = useState(null);
 
   useEffect(() => {
     if (authLoading) return;
@@ -70,11 +75,37 @@ const SharedPlanPage = () => {
   const openModal = (type) => {
     setDestForm(emptyDest);
     setActForm(emptyAct);
+    setExpForm(emptyExp);
     setPlanForm(emptyPlan);
     setEditingDestId(null);
     setEditingActId(null);
+    setEditingExpId(null);
     setLocalErr('');
     setModal(type);
+  };
+
+  const calcBudgetSummary = (expensesList, plannedBudget) => {
+    const totalExpenses = expensesList.reduce((s, e) => s + (e.amount || 0), 0);
+    const byCategory = Object.entries(
+      expensesList.reduce((acc, e) => {
+        acc[e.category] = (acc[e.category] || 0) + e.amount;
+        return acc;
+      }, {}),
+    ).map(([category, total]) => ({ category, total }));
+    return {
+      plannedBudget,
+      totalExpenses,
+      remainingBudget: plannedBudget - totalExpenses,
+      byCategory,
+    };
+  };
+
+  const setExpensesState = (expensesList) => {
+    setData(prev => ({
+      ...prev,
+      expenses: expensesList,
+      budgetSummary: calcBudgetSummary(expensesList, prev.plan.budget),
+    }));
   };
 
   const openEditDestination = (dest) => {
@@ -103,6 +134,19 @@ const SharedPlanPage = () => {
     setEditingActId(act.id);
     setLocalErr('');
     setModal('act');
+  };
+
+  const openEditExpense = (exp) => {
+    setExpForm({
+      name: exp.name,
+      category: exp.category || 'Transport',
+      amount: exp.amount,
+      date: exp.date?.split('T')[0] || '',
+      description: exp.description || '',
+    });
+    setEditingExpId(exp.id);
+    setLocalErr('');
+    setModal('exp');
   };
 
   const openEditPlan = () => {
@@ -231,6 +275,90 @@ const SharedPlanPage = () => {
     });
   };
 
+  const handleAddExpense = async (e) => {
+    e.preventDefault();
+    if (!isDateInPlan(expForm.date)) {
+      setLocalErr('Expense date must be within the travel period!'); return;
+    }
+    if (parseFloat(expForm.amount) <= 0) {
+      setLocalErr('Amount must be positive!'); return;
+    }
+    setApiLoading(true);
+    try {
+      const payload = {
+        name: expForm.name,
+        category: expForm.category,
+        amount: parseFloat(expForm.amount),
+        date: expForm.date,
+        description: expForm.description,
+      };
+      if (editingExpId) {
+        const updated = await sharedPlanService.updateExpense(token, editingExpId, payload);
+        setExpensesState((data.expenses || []).map(ex => ex.id === editingExpId ? updated : ex));
+        showToast('Expense updated successfully!');
+      } else {
+        const created = await sharedPlanService.addExpense(token, { ...payload, travelPlanId: data.plan.id });
+        setExpensesState([...(data.expenses || []), created]);
+        showToast('Expense added successfully!');
+      }
+      setModal(null);
+    } catch {
+      setLocalErr(editingExpId ? 'Error updating expense.' : 'Error adding expense.');
+    } finally { setApiLoading(false); }
+  };
+
+  const handleDeleteExpense = (exp) => {
+    setConfirmModal({
+      name: exp.name,
+      onConfirm: async () => {
+        await sharedPlanService.deleteExpense(token, exp.id);
+        setExpensesState((data.expenses || []).filter(ex => ex.id !== exp.id));
+        showToast('Expense deleted successfully.');
+      },
+    });
+  };
+
+  const handleAddChecklistItem = async (e) => {
+    e.preventDefault();
+    if (!checklistInput.trim()) return;
+    setApiLoading(true);
+    try {
+      const item = await sharedPlanService.addChecklistItem(token, {
+        name: checklistInput.trim(),
+        travelPlanId: data.plan.id,
+      });
+      setData(prev => ({ ...prev, checklist: [...(prev.checklist || []), item] }));
+      setChecklistInput('');
+      showToast('Item added to packing list!');
+    } catch {
+      showToast('Error adding item.', 'error');
+    } finally { setApiLoading(false); }
+  };
+
+  const handleToggleChecklist = async (item) => {
+    if (!isEdit) return;
+    try {
+      const updated = await sharedPlanService.toggleChecklistItem(token, item.id);
+      setData(prev => ({
+        ...prev,
+        checklist: prev.checklist.map(c => c.id === item.id ? updated : c),
+      }));
+    } catch {
+      showToast('Error updating item.', 'error');
+    }
+  };
+
+  const handleDeleteChecklistItem = (item) => {
+    setConfirmModal({
+      name: item.name,
+      onConfirm: async () => {
+        await sharedPlanService.deleteChecklistItem(token, item.id);
+        setData(prev => ({ ...prev, checklist: prev.checklist.filter(c => c.id !== item.id) }));
+        showToast('Item removed from packing list.');
+      },
+    });
+  };
+
   const handleDeleteConfirmed = async () => {
     if (!confirmModal) return;
     try { await confirmModal.onConfirm(); }
@@ -255,7 +383,7 @@ const SharedPlanPage = () => {
     );
   }
 
-  const { plan, checklist, accessType } = data;
+  const { plan, checklist, expenses = [], budgetSummary, accessType } = data;
   const isEdit = accessType === 'EDIT';
 
   const activitiesByDate = (plan.activities || [])
@@ -387,6 +515,54 @@ const SharedPlanPage = () => {
                   onChange={e => setActForm({ ...actForm, description: e.target.value })}
                   placeholder="Short description..." />
               </div>
+            </div>
+            {localErr && <div className="alert-error text-xs"><AlertCircle className="w-3.5 h-3.5 shrink-0" />{localErr}</div>}
+            <div className="flex gap-3 pt-2">
+              <button type="button" onClick={() => setModal(null)} className="btn-outline flex-1">Cancel</button>
+              <button type="submit" className="btn-primary flex-1" disabled={apiLoading}>{spinBtn('Save')}</button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {modal === 'exp' && (
+        <Modal title={editingExpId ? 'Edit expense' : 'New expense'} onClose={() => setModal(null)}>
+          <form onSubmit={handleAddExpense} className="space-y-4">
+            <div className="alert-info text-xs">
+              <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+              Date must be within the travel period: {formatDateRange(plan.startDate, plan.endDate)}
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="label">Name *</label>
+                <input className="input" value={expForm.name}
+                  onChange={e => setExpForm({ ...expForm, name: e.target.value })} required />
+              </div>
+              <div>
+                <label className="label">Category</label>
+                <select className="select" value={expForm.category}
+                  onChange={e => setExpForm({ ...expForm, category: e.target.value })}>
+                  {EXPENSE_CATEGORIES.map(c => <option key={c}>{c}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="label">Amount (€) *</label>
+                <input type="number" min="0.01" step="0.01" className="input" value={expForm.amount}
+                  onChange={e => setExpForm({ ...expForm, amount: e.target.value })} required />
+              </div>
+              <div>
+                <label className="label">Date</label>
+                <input type="date" className="input" value={expForm.date}
+                  min={planStart} max={planEnd}
+                  onChange={e => setExpForm({ ...expForm, date: e.target.value })} />
+              </div>
+            </div>
+            <div>
+              <label className="label">Description</label>
+              <input className="input" value={expForm.description}
+                onChange={e => setExpForm({ ...expForm, description: e.target.value })} />
             </div>
             {localErr && <div className="alert-error text-xs"><AlertCircle className="w-3.5 h-3.5 shrink-0" />{localErr}</div>}
             <div className="flex gap-3 pt-2">
@@ -589,26 +765,120 @@ const SharedPlanPage = () => {
           )}
         </div>
 
-        {checklist && checklist.length > 0 && (
-          <div className="card">
-            <h2 className="section-title mb-4">
-              <CheckSquare className="w-5 h-5 text-violet-500" />
-              Packing list ({checklist.filter(c => c.isCompleted).length}/{checklist.length})
+        <div className="card">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="section-title">
+              <Wallet className="w-5 h-5 text-emerald-500" />
+              Expenses ({expenses.length})
             </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {checklist.map(item => (
-                <div key={item.id} className={`flex items-center gap-2 p-2 rounded-lg ${item.isCompleted ? 'bg-emerald-50' : 'bg-slate-50'}`}>
-                  <div className={`w-4 h-4 rounded flex items-center justify-center shrink-0 ${item.isCompleted ? 'bg-emerald-500' : 'border-2 border-slate-300'}`}>
-                    {item.isCompleted && <span className="text-white text-xs">✓</span>}
+            {isEdit && (
+              <button onClick={() => openModal('exp')} className="btn-sky">
+                <Plus className="w-4 h-4" />Add
+              </button>
+            )}
+          </div>
+
+          {budgetSummary && (
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              <div className="card-sm text-center">
+                <div className="text-lg font-bold text-slate-800">{budgetSummary.plannedBudget} €</div>
+                <div className="text-xs text-slate-400 mt-1">Planned</div>
+              </div>
+              <div className="card-sm text-center bg-rose-50 border-rose-100">
+                <div className="text-lg font-bold text-rose-500">{budgetSummary.totalExpenses} €</div>
+                <div className="text-xs text-slate-400 mt-1">Spent</div>
+              </div>
+              <div className={`card-sm text-center ${budgetSummary.remainingBudget >= 0 ? 'bg-emerald-50 border-emerald-100' : 'bg-rose-50 border-rose-100'}`}>
+                <div className={`text-lg font-bold ${budgetSummary.remainingBudget >= 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
+                  {budgetSummary.remainingBudget} €
+                </div>
+                <div className="text-xs text-slate-400 mt-1">Remaining</div>
+              </div>
+            </div>
+          )}
+
+          {expenses.length === 0 ? (
+            <div className="empty-state py-6">
+              <Wallet className="w-10 h-10 text-slate-200 mb-2" />
+              <p className="text-slate-400 text-sm">No expenses.</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {expenses.map(exp => (
+                <div key={exp.id} className="flex items-center justify-between gap-3 p-3 bg-slate-50 rounded-xl">
+                  <div>
+                    <div className="font-semibold text-slate-800 text-sm">{exp.name}</div>
+                    <div className="text-xs text-slate-500">{exp.category} · {formatDate(exp.date)}</div>
                   </div>
-                  <span className={`text-xs font-medium ${item.isCompleted ? 'line-through text-slate-400' : 'text-slate-700'}`}>
-                    {item.name}
-                  </span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="font-bold text-rose-500 text-sm">{exp.amount} €</span>
+                    {isEdit && (
+                      <>
+                        <button onClick={() => openEditExpense(exp)} className="btn-outline px-2 py-1.5">
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button onClick={() => handleDeleteExpense(exp)} className="btn-danger px-2 py-1.5">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
-          </div>
-        )}
+          )}
+        </div>
+
+        <div className="card">
+          <h2 className="section-title mb-4">
+            <CheckSquare className="w-5 h-5 text-violet-500" />
+            Packing list ({(checklist || []).filter(c => c.isCompleted).length}/{(checklist || []).length})
+          </h2>
+
+          {isEdit && (
+            <form onSubmit={handleAddChecklistItem} className="flex gap-3 mb-4">
+              <input
+                className="input flex-1"
+                value={checklistInput}
+                onChange={e => setChecklistInput(e.target.value)}
+                placeholder="Add item (e.g. Passport)"
+              />
+              <button type="submit" className="btn-sky shrink-0" disabled={apiLoading}>
+                <Plus className="w-4 h-4" />Add
+              </button>
+            </form>
+          )}
+
+          {(!checklist || checklist.length === 0) ? (
+            <div className="empty-state py-6">
+              <CheckSquare className="w-10 h-10 text-slate-200 mb-2" />
+              <p className="text-slate-400 text-sm">No checklist items.</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {checklist.map(item => (
+                <div key={item.id} className={`flex items-center gap-3 p-3 rounded-xl ${item.isCompleted ? 'bg-emerald-50' : 'bg-slate-50'}`}>
+                  <button
+                    type="button"
+                    onClick={() => handleToggleChecklist(item)}
+                    disabled={!isEdit}
+                    className={`w-5 h-5 rounded flex items-center justify-center shrink-0 ${item.isCompleted ? 'bg-emerald-500' : 'border-2 border-slate-300'} ${isEdit ? 'cursor-pointer' : 'cursor-default'}`}
+                  >
+                    {item.isCompleted && <span className="text-white text-xs">✓</span>}
+                  </button>
+                  <span className={`flex-1 text-sm font-medium ${item.isCompleted ? 'line-through text-slate-400' : 'text-slate-700'}`}>
+                    {item.name}
+                  </span>
+                  {isEdit && (
+                    <button onClick={() => handleDeleteChecklistItem(item)} className="btn-danger px-2 py-1.5 shrink-0">
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
       </div>
     </div>

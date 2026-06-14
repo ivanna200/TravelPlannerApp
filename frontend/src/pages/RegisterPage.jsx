@@ -24,7 +24,10 @@ const RegisterPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    if (form.password.length < 6) { setError('Password must be at least 6 characters.'); return; }
+    if (!PW_RULES.every(r => r.test(form.password))) {
+      setError('Password must meet all requirements below.');
+      return;
+    }
     setLoading(true);
     try {
       const result = await register(form);

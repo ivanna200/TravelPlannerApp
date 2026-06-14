@@ -35,6 +35,41 @@ const sharedPlanService = {
     const response = await api.put(`/api/sharing/${shareToken}/activities/${id}`, data);
     return response.data;
   },
+
+  addExpense: async (shareToken, data) => {
+    const response = await api.post(`/api/sharing/${shareToken}/expenses`, data);
+    return response.data;
+  },
+
+  updateExpense: async (shareToken, id, data) => {
+    const response = await api.put(`/api/sharing/${shareToken}/expenses/${id}`, data);
+    return response.data;
+  },
+
+  deleteExpense: async (shareToken, id) => {
+    const response = await api.delete(`/api/sharing/${shareToken}/expenses/${id}`);
+    return response.data;
+  },
+
+  addChecklistItem: async (shareToken, data) => {
+    const response = await api.post(`/api/sharing/${shareToken}/checklist`, data);
+    return response.data;
+  },
+
+  updateChecklistItem: async (shareToken, id, data) => {
+    const response = await api.put(`/api/sharing/${shareToken}/checklist/${id}`, data);
+    return response.data;
+  },
+
+  toggleChecklistItem: async (shareToken, id) => {
+    const response = await api.patch(`/api/sharing/${shareToken}/checklist/${id}/toggle`);
+    return response.data;
+  },
+
+  deleteChecklistItem: async (shareToken, id) => {
+    const response = await api.delete(`/api/sharing/${shareToken}/checklist/${id}`);
+    return response.data;
+  },
 };
 
 export default sharedPlanService;

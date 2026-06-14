@@ -1,9 +1,11 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.ServiceFabric.Services.Runtime;
 using ExpenseService.Data;
 using ExpenseService.Services;
 
-var builder = WebApplication.CreateBuilder(args);
+var builder = Host.CreateApplicationBuilder(args);
 
 builder.Services.AddDbContext<ExpenseDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")),
@@ -11,19 +13,10 @@ builder.Services.AddDbContext<ExpenseDbContext>(options =>
 
 builder.Services.AddScoped<ExpenseManagementService>();
 
-var app = builder.Build();
-
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<ExpenseDbContext>();
-    db.Database.Migrate();
-}
+var host = builder.Build();
 
 ServiceRuntime.RegisterServiceAsync("ExpenseServiceType",
-    context =>
-    {
-        var serviceProvider = app.Services;
-        return new ExpenseService.ExpenseService(context, serviceProvider);
-    }).GetAwaiter().GetResult();
+    context => new ExpenseService.ExpenseService(context, host.Services))
+    .GetAwaiter().GetResult();
 
-await Task.Delay(Timeout.Infinite);
+Thread.Sleep(Timeout.Infinite);

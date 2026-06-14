@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.ServiceFabric.Data.Collections;
 using Microsoft.ServiceFabric.Services.Communication.Runtime;
 using Microsoft.ServiceFabric.Services.Remoting.Runtime;
@@ -5,6 +6,7 @@ using Microsoft.ServiceFabric.Services.Runtime;
 using System.Fabric;
 using TravelPlanner.Shared.DTOs;
 using TravelPlanner.Shared.Interfaces;
+using ExpenseService.Data;
 using ExpenseService.Infrastructure;
 using ExpenseService.Services;
 
@@ -24,8 +26,19 @@ namespace ExpenseService
 
         protected override async Task OnOpenAsync(ReplicaOpenMode openMode, CancellationToken cancellationToken)
         {
-            _budgetCache = await StateManager.GetOrAddAsync<IReliableDictionary<int, string>>(BudgetCacheName);
             await base.OnOpenAsync(openMode, cancellationToken);
+        }
+
+        protected override async Task RunAsync(CancellationToken cancellationToken)
+        {
+            using (var scope = _serviceProvider.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<ExpenseDbContext>();
+                await db.Database.MigrateAsync(cancellationToken);
+            }
+
+            _budgetCache = await StateManager.GetOrAddAsync<IReliableDictionary<int, string>>(BudgetCacheName);
+            await Task.Delay(Timeout.Infinite, cancellationToken);
         }
 
         private async Task InvalidateBudgetCacheAsync(int travelPlanId)

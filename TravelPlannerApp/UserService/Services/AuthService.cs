@@ -22,6 +22,10 @@ namespace UserService.Services
 
         public async Task<AuthResultDto> RegisterAsync(RegisterDto dto)
         {
+            var passwordError = ValidatePassword(dto.Password);
+            if (passwordError != null)
+                return new AuthResultDto { Success = false, Message = passwordError };
+
             var existingUser = await _context.Users
                 .FirstOrDefaultAsync(u => u.Email == dto.Email);
 
@@ -141,6 +145,17 @@ namespace UserService.Services
                 Email = user.Email,
                 Role = user.Role
             };
+        }
+
+        private static string? ValidatePassword(string password)
+        {
+            if (string.IsNullOrWhiteSpace(password) || password.Length < 6)
+                return "Password must be at least 6 characters.";
+            if (!password.Any(char.IsUpper))
+                return "Password must contain at least one uppercase letter.";
+            if (!password.Any(char.IsDigit))
+                return "Password must contain at least one number.";
+            return null;
         }
 
         private string GenerateJwtToken(User user)

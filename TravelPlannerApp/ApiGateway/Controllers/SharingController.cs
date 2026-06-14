@@ -30,6 +30,11 @@ namespace ApiGateway.Controllers
             ServiceProxy.Create<IChecklistService>(
                 new Uri("fabric:/TravelPlannerApp/ChecklistService"));
 
+        private IExpenseService GetExpenseProxy() =>
+            ServiceProxy.Create<IExpenseService>(
+                new Uri("fabric:/TravelPlannerApp/ExpenseService"),
+                new ServicePartitionKey(0));
+
         private string GetFrontendUrl() =>
             _configuration["AppSettings:FrontendUrl"] ?? "http://localhost:5173";
 
@@ -121,8 +126,10 @@ namespace ApiGateway.Controllers
                 return NotFound(new { message = "Travel plan not found." });
 
             var checklist = await GetChecklistProxy().GetPlanItemsAsync(plan.Id);
+            var expenses = await GetExpenseProxy().GetPlanExpensesAsync(plan.Id);
+            var budgetSummary = await GetExpenseProxy().GetBudgetSummaryAsync(plan.Id, plan.Budget);
 
-            return Ok(new { plan, checklist, accessType = validation.AccessType });
+            return Ok(new { plan, checklist, expenses, budgetSummary, accessType = validation.AccessType });
         }
 
         [HttpPut("{token}/plan")]
@@ -287,6 +294,154 @@ namespace ApiGateway.Controllers
                 return NotFound(new { message = "Activity not found." });
 
             return Ok(new { message = "Activity deleted successfully." });
+        }
+
+        [HttpPost("{token}/expenses")]
+        [Authorize]
+        public async Task<IActionResult> CreateSharedExpense(string token, [FromBody] CreateExpenseDto dto)
+        {
+            var validation = await ValidateEditTokenAsync(token);
+            if (validation.Error != null) return validation.Error;
+
+            if (string.IsNullOrWhiteSpace(dto.Name))
+                return BadRequest(new { message = "Expense name is required." });
+            if (dto.Amount <= 0)
+                return BadRequest(new { message = "Amount must be positive." });
+            if (dto.TravelPlanId != validation.Value!.TravelPlanId)
+                return BadRequest(new { message = "Expense does not belong to the shared plan." });
+
+            try
+            {
+                var expense = await GetExpenseProxy().CreateExpenseAsync(dto);
+                return Ok(expense);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpPut("{token}/expenses/{id:int}")]
+        [Authorize]
+        public async Task<IActionResult> UpdateSharedExpense(string token, int id, [FromBody] UpdateExpenseDto dto)
+        {
+            var validation = await ValidateEditTokenAsync(token);
+            if (validation.Error != null) return validation.Error;
+
+            if (dto.Amount <= 0)
+                return BadRequest(new { message = "Amount must be positive." });
+
+            var expense = await GetExpenseProxy().GetExpenseAsync(id);
+            if (expense == null)
+                return NotFound(new { message = "Expense not found." });
+            if (expense.TravelPlanId != validation.Value!.TravelPlanId)
+                return StatusCode(403, new { message = "Expense does not belong to the shared plan." });
+
+            try
+            {
+                var updated = await GetExpenseProxy().UpdateExpenseAsync(id, dto);
+                if (updated == null)
+                    return NotFound(new { message = "Expense not found." });
+                return Ok(updated);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpDelete("{token}/expenses/{id:int}")]
+        [Authorize]
+        public async Task<IActionResult> DeleteSharedExpense(string token, int id)
+        {
+            var validation = await ValidateEditTokenAsync(token);
+            if (validation.Error != null) return validation.Error;
+
+            var expense = await GetExpenseProxy().GetExpenseAsync(id);
+            if (expense == null)
+                return NotFound(new { message = "Expense not found." });
+            if (expense.TravelPlanId != validation.Value!.TravelPlanId)
+                return StatusCode(403, new { message = "Expense does not belong to the shared plan." });
+
+            var deleted = await GetExpenseProxy().DeleteExpenseAsync(id);
+            if (!deleted)
+                return NotFound(new { message = "Expense not found." });
+
+            return Ok(new { message = "Expense deleted successfully." });
+        }
+
+        [HttpPost("{token}/checklist")]
+        [Authorize]
+        public async Task<IActionResult> CreateSharedChecklistItem(string token, [FromBody] CreateChecklistItemDto dto)
+        {
+            var validation = await ValidateEditTokenAsync(token);
+            if (validation.Error != null) return validation.Error;
+
+            if (string.IsNullOrWhiteSpace(dto.Name))
+                return BadRequest(new { message = "Item name is required." });
+            if (dto.TravelPlanId != validation.Value!.TravelPlanId)
+                return BadRequest(new { message = "Checklist item does not belong to the shared plan." });
+
+            var item = await GetChecklistProxy().CreateItemAsync(dto);
+            return Ok(item);
+        }
+
+        [HttpPut("{token}/checklist/{id:int}")]
+        [Authorize]
+        public async Task<IActionResult> UpdateSharedChecklistItem(string token, int id, [FromBody] UpdateChecklistItemDto dto)
+        {
+            var validation = await ValidateEditTokenAsync(token);
+            if (validation.Error != null) return validation.Error;
+
+            var item = await GetChecklistProxy().GetItemAsync(id);
+            if (item == null)
+                return NotFound(new { message = "Checklist item not found." });
+            if (item.TravelPlanId != validation.Value!.TravelPlanId)
+                return StatusCode(403, new { message = "Checklist item does not belong to the shared plan." });
+
+            var updated = await GetChecklistProxy().UpdateItemAsync(id, dto);
+            if (updated == null)
+                return NotFound(new { message = "Checklist item not found." });
+            return Ok(updated);
+        }
+
+        [HttpPatch("{token}/checklist/{id:int}/toggle")]
+        [Authorize]
+        public async Task<IActionResult> ToggleSharedChecklistItem(string token, int id)
+        {
+            var validation = await ValidateEditTokenAsync(token);
+            if (validation.Error != null) return validation.Error;
+
+            var item = await GetChecklistProxy().GetItemAsync(id);
+            if (item == null)
+                return NotFound(new { message = "Checklist item not found." });
+            if (item.TravelPlanId != validation.Value!.TravelPlanId)
+                return StatusCode(403, new { message = "Checklist item does not belong to the shared plan." });
+
+            var toggled = await GetChecklistProxy().ToggleItemAsync(id);
+            if (toggled == null)
+                return NotFound(new { message = "Checklist item not found." });
+            return Ok(toggled);
+        }
+
+        [HttpDelete("{token}/checklist/{id:int}")]
+        [Authorize]
+        public async Task<IActionResult> DeleteSharedChecklistItem(string token, int id)
+        {
+            var validation = await ValidateEditTokenAsync(token);
+            if (validation.Error != null) return validation.Error;
+
+            var item = await GetChecklistProxy().GetItemAsync(id);
+            if (item == null)
+                return NotFound(new { message = "Checklist item not found." });
+            if (item.TravelPlanId != validation.Value!.TravelPlanId)
+                return StatusCode(403, new { message = "Checklist item does not belong to the shared plan." });
+
+            var deleted = await GetChecklistProxy().DeleteItemAsync(id);
+            if (!deleted)
+                return NotFound(new { message = "Checklist item not found." });
+
+            return Ok(new { message = "Checklist item deleted successfully." });
         }
 
         private async Task<(ShareTokenValidationDto? Value, IActionResult? Error)> ValidateEditTokenAsync(string token)
